@@ -444,6 +444,65 @@ export default function PropertyDetailScreen() {
     return { pending: { label: 'Invitert', color: '#F59E0B' }, accepted: { label: 'Aktiv leietaker', color: '#10B981' }, expired: { label: 'Utløpt', color: '#EF4444' } }[status];
   };
 
+  const renderUnit = useCallback(({ item }: { item: UnitWithInvite }) => {
+    const st = statusLabel(item.invite_status);
+    const activeLease = leases.find(l => l.unit_id === item.id && !l.ended_at);
+    const pastLeases = leases.filter(l => l.unit_id === item.id && l.ended_at);
+    return (
+      <View style={s.unitCard}>
+        <View style={s.unitRow}>
+          <View style={s.unitInfo}>
+            <Text style={s.unitNumber}>Enhet {item.unit_number}</Text>
+            {item.monthly_rent != null && <Text style={s.unitRent}>{Number(item.monthly_rent).toLocaleString('nb-NO')} kr/mnd</Text>}
+            {item.size_sqm != null && <Text style={s.unitDetail}>{item.size_sqm} m²{item.floor != null ? ` · Etasje ${item.floor}` : ''}</Text>}
+            {activeLease ? (
+              <View style={s.activeTenantRow}>
+                <Ionicons name="person-circle-outline" size={15} color="#10B981" />
+                <Text style={s.activeTenantName}>{activeLease.tenant_name}</Text>
+                <Text style={s.activeTenantSince}>· fra {fmtDate(activeLease.started_at)}</Text>
+              </View>
+            ) : st ? (
+              <View style={[s.badge, { backgroundColor: st.color + '22' }]}><Text style={[s.badgeText, { color: st.color }]}>{st.label}</Text></View>
+            ) : null}
+          </View>
+          <View style={s.unitActions}>
+            <TouchableOpacity style={s.iconBtn} onPress={() => openDocs(item)}>
+              <Ionicons name="document-text-outline" size={22} color="#7C3AED" />
+            </TouchableOpacity>
+            <TouchableOpacity style={s.iconBtn} onPress={() => openExpenses(item)}>
+              <Ionicons name="wallet-outline" size={22} color="#10B981" />
+            </TouchableOpacity>
+            <TouchableOpacity style={s.iconBtn} onPress={() => router.push({ pathname: '/(landlord)/inspection', params: { unit_id: item.id, unit_number: item.unit_number } } as any)}>
+              <Ionicons name="clipboard-outline" size={22} color="#F59E0B" />
+            </TouchableOpacity>
+            {pastLeases.length > 0 && (
+              <TouchableOpacity style={s.iconBtn} onPress={() => { setHistoryUnit(item); setShowHistoryModal(true); }}>
+                <Ionicons name="time-outline" size={22} color="#6B7280" />
+              </TouchableOpacity>
+            )}
+            {!activeLease && (
+              <TouchableOpacity style={s.iconBtn} onPress={() => { setSelectedUnit(item); setShowInviteModal(true); }}>
+                <Ionicons name="mail-outline" size={22} color={BLUE} />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity style={s.iconBtn} onPress={() => {
+              setSettingsUnit(item);
+              setUnitForm({
+                unit_number: item.unit_number,
+                floor: item.floor != null ? String(item.floor) : '',
+                size_sqm: item.size_sqm != null ? String(item.size_sqm) : '',
+                monthly_rent: item.monthly_rent != null ? String(item.monthly_rent) : '',
+              });
+              setShowUnitSettingsModal(true);
+            }}>
+              <Ionicons name="settings-outline" size={22} color="#9CA3AF" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  }, [leases, units]);
+
   if (loading) return <ActivityIndicator style={{ flex: 1 }} color={BLUE} />;
 
   return (
@@ -495,64 +554,7 @@ export default function PropertyDetailScreen() {
             <Text style={s.emptyText}>Ingen enheter ennå. Legg til en enhet.</Text>
           </View>
         }
-        renderItem={useCallback(({ item }: { item: UnitWithInvite }) => {
-          const st = statusLabel(item.invite_status);
-          const activeLease = leases.find(l => l.unit_id === item.id && !l.ended_at);
-          const pastLeases = leases.filter(l => l.unit_id === item.id && l.ended_at);
-          return (
-            <View style={s.unitCard}>
-              <View style={s.unitRow}>
-                <View style={s.unitInfo}>
-                  <Text style={s.unitNumber}>Enhet {item.unit_number}</Text>
-                  {item.monthly_rent != null && <Text style={s.unitRent}>{Number(item.monthly_rent).toLocaleString('nb-NO')} kr/mnd</Text>}
-                  {item.size_sqm != null && <Text style={s.unitDetail}>{item.size_sqm} m²{item.floor != null ? ` · Etasje ${item.floor}` : ''}</Text>}
-                  {activeLease ? (
-                    <View style={s.activeTenantRow}>
-                      <Ionicons name="person-circle-outline" size={15} color="#10B981" />
-                      <Text style={s.activeTenantName}>{activeLease.tenant_name}</Text>
-                      <Text style={s.activeTenantSince}>· fra {fmtDate(activeLease.started_at)}</Text>
-                    </View>
-                  ) : st ? (
-                    <View style={[s.badge, { backgroundColor: st.color + '22' }]}><Text style={[s.badgeText, { color: st.color }]}>{st.label}</Text></View>
-                  ) : null}
-                </View>
-                <View style={s.unitActions}>
-                  <TouchableOpacity style={s.iconBtn} onPress={() => openDocs(item)}>
-                    <Ionicons name="document-text-outline" size={22} color="#7C3AED" />
-                  </TouchableOpacity>
-                  <TouchableOpacity style={s.iconBtn} onPress={() => openExpenses(item)}>
-                    <Ionicons name="wallet-outline" size={22} color="#10B981" />
-                  </TouchableOpacity>
-                  <TouchableOpacity style={s.iconBtn} onPress={() => router.push({ pathname: '/(landlord)/inspection', params: { unit_id: item.id, unit_number: item.unit_number } } as any)}>
-                    <Ionicons name="clipboard-outline" size={22} color="#F59E0B" />
-                  </TouchableOpacity>
-                  {pastLeases.length > 0 && (
-                    <TouchableOpacity style={s.iconBtn} onPress={() => { setHistoryUnit(item); setShowHistoryModal(true); }}>
-                      <Ionicons name="time-outline" size={22} color="#6B7280" />
-                    </TouchableOpacity>
-                  )}
-                  {!activeLease && (
-                    <TouchableOpacity style={s.iconBtn} onPress={() => { setSelectedUnit(item); setShowInviteModal(true); }}>
-                      <Ionicons name="mail-outline" size={22} color={BLUE} />
-                    </TouchableOpacity>
-                  )}
-                  <TouchableOpacity style={s.iconBtn} onPress={() => {
-                    setSettingsUnit(item);
-                    setUnitForm({
-                      unit_number: item.unit_number,
-                      floor: item.floor != null ? String(item.floor) : '',
-                      size_sqm: item.size_sqm != null ? String(item.size_sqm) : '',
-                      monthly_rent: item.monthly_rent != null ? String(item.monthly_rent) : '',
-                    });
-                    setShowUnitSettingsModal(true);
-                  }}>
-                    <Ionicons name="settings-outline" size={22} color="#9CA3AF" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          );
-        }, [leases, units])}
+        renderItem={renderUnit}
       />
 
       {/* Add / Edit Unit Modal */}
