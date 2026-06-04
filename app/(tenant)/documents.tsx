@@ -4,11 +4,28 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import { DocumentRow, DocumentCategory } from '@/lib/types';
 
 const BLUE = '#1A56A0';
+
+function base64ToUint8Array(base64: string): Uint8Array {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  const str = base64.replace(/=+$/, '');
+  const bytes: number[] = [];
+  for (let i = 0; i < str.length; i += 4) {
+    const e1 = chars.indexOf(str[i]);
+    const e2 = chars.indexOf(str[i + 1]);
+    const e3 = str[i + 2] ? chars.indexOf(str[i + 2]) : -1;
+    const e4 = str[i + 3] ? chars.indexOf(str[i + 3]) : -1;
+    bytes.push((e1 << 2) | (e2 >> 4));
+    if (e3 !== -1) bytes.push(((e2 & 15) << 4) | (e3 >> 2));
+    if (e4 !== -1) bytes.push(((e3 & 3) << 6) | e4);
+  }
+  return new Uint8Array(bytes);
+}
 
 const CATEGORIES: { key: DocumentCategory; label: string; icon: string; color: string }[] = [
   { key: 'contract',  label: 'Kontrakt',   icon: 'document-text-outline', color: '#1A56A0' },
@@ -28,6 +45,7 @@ export default function TenantDocumentsScreen() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [pendingFile, setPendingFile] = useState<PendingFile | null>(null);
+  const [showCatModal, setShowCatModal] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewVisible, setPreviewVisible] = useState(false);
 
@@ -48,14 +66,15 @@ export default function TenantDocumentsScreen() {
     if (!unitId) return;
     setUploading(true);
     try {
-      const blob = await (await fetch(file.uri)).blob();
+      const base64 = await FileSystem.readAsStringAsync(file.uri, { encoding: FileSystem.EncodingType.Base64 });
+      const bytes = base64ToUint8Array(base64);
       const path = `${user!.id}/${unitId}/${Date.now()}_${file.name}`;
-      const { error: upErr } = await supabase.storage.from('documents').upload(path, blob, { contentType: file.mimeType });
+      const { error: upErr } = await supabase.storage.from('documents').upload(path, bytes, { contentType: file.mimeType });
       if (upErr) throw upErr;
       const { error: dbErr } = await supabase.from('documents').insert({
         unit_id: unitId, uploaded_by: user!.id,
         name: file.name, category,
-        storage_path: path, file_size: blob.size,
+        storage_path: path, file_size: bytes.length,
       });
       if (dbErr) throw dbErr;
       await fetchDocs(unitId);
@@ -108,20 +127,16 @@ export default function TenantDocumentsScreen() {
   };
 
   const pickSource = (category: DocumentCategory) => {
+    setShowCatModal(false);
     Alert.alert('Velg fil', 'Hvor vil du hente filen fra?', [
-      { text: '📷  Ta bilde med kamera', onPress: () => takePhoto(category) },
-      { text: '🖼️  Velg fra bildebibliotek', onPress: () => pickImage(category) },
-      { text: '📄  Velg fil (PDF, Word, Excel…)', onPress: () => pickDocument(category) },
+      { text: 'Ta bilde med kamera', onPress: () => takePhoto(category) },
+      { text: 'Velg fra bildebibliotek', onPress: () => pickImage(category) },
+      { text: 'Velg fil (PDF, Word, Excel)', onPress: () => pickDocument(category) },
       { text: 'Avbryt', style: 'cancel' as const },
     ]);
   };
 
-  const showUploadOptions = () => {
-    Alert.alert('Velg kategori', 'Hva slags dokument er dette?', [
-      ...CATEGORIES.map((c: { key: DocumentCategory; label: string }) => ({ text: c.label, onPress: () => pickSource(c.key) })),
-      { text: 'Avbryt', style: 'cancel' as const },
-    ]);
-  };
+  const showUploadOptions = () => setShowCatModal(true);
 
   const openDoc = async (doc: DocumentRow) => {
     const { data, error } = await supabase.storage.from('documents').createSignedUrl(doc.storage_path, 60);
@@ -196,6 +211,27 @@ export default function TenantDocumentsScreen() {
           );
         }}
       />
+
+      {/* Category picker */}
+      <Modal visible={showCatModal} transparent animationType="slide">
+        <TouchableOpacity style={s.backdrop} activeOpacity={1} onPress={() => setShowCatModal(false)}>
+          <View style={s.sheet}>
+            <View style={s.sheetHandle} />
+            <Text style={s.sheetTitle}>Velg kategori</Text>
+            <View style={s.catList}>
+              {CATEGORIES.map(cat => (
+                <TouchableOpacity key={cat.key} style={s.catRow} onPress={() => pickSource(cat.key)}>
+                  <View style={[s.catIcon, { backgroundColor: cat.color + '18' }]}>
+                    <Ionicons name={cat.icon as any} size={22} color={cat.color} />
+                  </View>
+                  <Text style={s.catLabel}>{cat.label}</Text>
+                  <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Image preview */}
       <Modal visible={previewVisible} transparent animationType="fade">

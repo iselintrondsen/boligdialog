@@ -4,6 +4,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Clipboard from 'expo-clipboard';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -11,9 +12,25 @@ import { useAuthStore } from '@/stores/authStore';
 import { PropertyRow, UnitRow, ExpenseRow, ExpenseCategory, DocumentRow, DocumentCategory, LeaseRow } from '@/lib/types';
 import { Ionicons } from '@expo/vector-icons';
 
-async function uriToBlob(uri: string): Promise<Blob> {
-  const response = await fetch(uri);
-  return response.blob();
+function base64ToUint8Array(base64: string): Uint8Array {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  const str = base64.replace(/=+$/, '');
+  const bytes: number[] = [];
+  for (let i = 0; i < str.length; i += 4) {
+    const e1 = chars.indexOf(str[i]);
+    const e2 = chars.indexOf(str[i + 1]);
+    const e3 = str[i + 2] ? chars.indexOf(str[i + 2]) : -1;
+    const e4 = str[i + 3] ? chars.indexOf(str[i + 3]) : -1;
+    bytes.push((e1 << 2) | (e2 >> 4));
+    if (e3 !== -1) bytes.push(((e2 & 15) << 4) | (e3 >> 2));
+    if (e4 !== -1) bytes.push(((e3 & 3) << 6) | e4);
+  }
+  return new Uint8Array(bytes);
+}
+
+async function uriToBytes(uri: string): Promise<Uint8Array> {
+  const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+  return base64ToUint8Array(base64);
 }
 
 const DOC_CATEGORIES: { key: DocumentCategory; label: string; icon: string; color: string }[] = [
@@ -103,6 +120,7 @@ export default function PropertyDetailScreen() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewVisible, setPreviewVisible] = useState(false);
   const [pendingDoc, setPendingDoc] = useState<{ uri: string; name: string; mimeType: string } | null>(null);
+  const [showDocCatModal, setShowDocCatModal] = useState(false);
 
   const fetchDocs = async (uid: string) => {
     const { data } = await supabase.from('documents').select('*').eq('unit_id', uid).order('created_at', { ascending: false });
@@ -121,14 +139,14 @@ export default function PropertyDetailScreen() {
     if (!docsUnit) return;
     setUploadingDoc(true);
     try {
-      const blob = await uriToBlob(doc.uri);
+      const bytes = await uriToBytes(doc.uri);
       const path = `${user!.id}/${docsUnit.id}/${Date.now()}_${doc.name}`;
-      const { error: upErr } = await supabase.storage.from('documents').upload(path, blob, { contentType: doc.mimeType });
+      const { error: upErr } = await supabase.storage.from('documents').upload(path, bytes, { contentType: doc.mimeType });
       if (upErr) throw upErr;
       await supabase.from('documents').insert({
         unit_id: docsUnit.id, uploaded_by: user!.id,
         name: doc.name, category,
-        storage_path: path, file_size: blob.size,
+        storage_path: path, file_size: bytes.length,
       });
       await fetchDocs(docsUnit.id);
     } catch (e: any) {
@@ -140,10 +158,11 @@ export default function PropertyDetailScreen() {
   };
 
   const pickSource = (category: DocumentCategory) => {
+    setShowDocCatModal(false);
     Alert.alert('Velg fil', 'Hvor vil du hente filen fra?', [
-      { text: '📷  Ta bilde med kamera', onPress: () => handleTakePhoto(category) },
-      { text: '🖼️  Velg fra bildebibliotek', onPress: () => handlePickImage(category) },
-      { text: '📄  Velg fil (PDF, Word, Excel…)', onPress: () => handlePickDoc(category) },
+      { text: 'Ta bilde med kamera', onPress: () => handleTakePhoto(category) },
+      { text: 'Velg fra bildebibliotek', onPress: () => handlePickImage(category) },
+      { text: 'Velg fil (PDF, Word, Excel)', onPress: () => handlePickDoc(category) },
       { text: 'Avbryt', style: 'cancel' as const },
     ]);
   };
@@ -210,12 +229,7 @@ export default function PropertyDetailScreen() {
     ]);
   };
 
-  const showUploadOptions = () => {
-    Alert.alert('Velg kategori', 'Hva slags dokument er dette?', [
-      ...DOC_CATEGORIES.map(c => ({ text: c.label, onPress: () => pickSource(c.key) })),
-      { text: 'Avbryt', style: 'cancel' as const },
-    ]);
-  };
+  const showUploadOptions = () => setShowDocCatModal(true);
 
   // Expenses
   const [showExpensesModal, setShowExpensesModal] = useState(false);
@@ -686,6 +700,27 @@ export default function PropertyDetailScreen() {
       </Modal>
 
       {/* Document category picker */}
+      {/* Document Category Picker */}
+      <Modal visible={showDocCatModal} transparent animationType="slide">
+        <TouchableOpacity style={s.backdrop} activeOpacity={1} onPress={() => setShowDocCatModal(false)}>
+          <View style={s.sheet}>
+            <View style={s.sheetHandle} />
+            <Text style={s.sheetTitle}>Velg kategori</Text>
+            <View style={s.catList}>
+              {DOC_CATEGORIES.map(cat => (
+                <TouchableOpacity key={cat.key} style={s.catRow} onPress={() => pickSource(cat.key)}>
+                  <View style={[s.catIcon, { backgroundColor: cat.color + '18' }]}>
+                    <Ionicons name={cat.icon as any} size={22} color={cat.color} />
+                  </View>
+                  <Text style={s.catLabel}>{cat.label}</Text>
+                  <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
       {/* Unit Settings Modal */}
       <Modal visible={showUnitSettingsModal} animationType="slide" presentationStyle="pageSheet">
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>

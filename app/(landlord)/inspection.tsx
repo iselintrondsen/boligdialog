@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
@@ -13,6 +14,22 @@ import {
   InspectionReportRow, InspectionItemRow, InspectionPhotoRow,
   InspectionItemCategory, InspectionItemCondition, InspectionReportType,
 } from '@/lib/types';
+
+function base64ToUint8Array(base64: string): Uint8Array {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  const str = base64.replace(/=+$/, '');
+  const bytes: number[] = [];
+  for (let i = 0; i < str.length; i += 4) {
+    const e1 = chars.indexOf(str[i]);
+    const e2 = chars.indexOf(str[i + 1]);
+    const e3 = str[i + 2] ? chars.indexOf(str[i + 2]) : -1;
+    const e4 = str[i + 3] ? chars.indexOf(str[i + 3]) : -1;
+    bytes.push((e1 << 2) | (e2 >> 4));
+    if (e3 !== -1) bytes.push(((e2 & 15) << 4) | (e3 >> 2));
+    if (e4 !== -1) bytes.push(((e3 & 3) << 6) | e4);
+  }
+  return new Uint8Array(bytes);
+}
 
 const BLUE = '#1A56A0';
 
@@ -196,9 +213,10 @@ export default function InspectionScreen() {
           await supabase.from('inspection_items').update({ condition: rs.condition, notes: rs.notes.trim() || null }).eq('id', itemId);
         }
         if (rs.newPhotoUri) {
-          const blob = await (await fetch(rs.newPhotoUri)).blob();
+          const b64 = await FileSystem.readAsStringAsync(rs.newPhotoUri, { encoding: FileSystem.EncodingType.Base64 });
+          const bytes = base64ToUint8Array(b64);
           const path = `inspections/${selectedReport.id}/${itemId}_${rs.newPhotoName}`;
-          const { error: upErr } = await supabase.storage.from('documents').upload(path, blob, { contentType: rs.newMimeType });
+          const { error: upErr } = await supabase.storage.from('documents').upload(path, bytes, { contentType: rs.newMimeType });
           if (upErr) throw upErr;
           await supabase.from('inspection_photos').insert({ item_id: itemId, storage_path: path, uploaded_by: user!.id });
         }
@@ -233,9 +251,10 @@ export default function InspectionScreen() {
           await supabase.from('inspection_items').update({ condition: rs.condition, notes: rs.notes.trim() || null }).eq('id', itemId);
         }
         if (rs.newPhotoUri) {
-          const blob = await (await fetch(rs.newPhotoUri)).blob();
+          const b64 = await FileSystem.readAsStringAsync(rs.newPhotoUri, { encoding: FileSystem.EncodingType.Base64 });
+          const bytes = base64ToUint8Array(b64);
           const path = `inspections/${selectedReport.id}/${itemId}_${rs.newPhotoName}`;
-          const { error: upErr } = await supabase.storage.from('documents').upload(path, blob, { contentType: rs.newMimeType });
+          const { error: upErr } = await supabase.storage.from('documents').upload(path, bytes, { contentType: rs.newMimeType });
           if (upErr) throw upErr;
           const { data: pData } = await supabase.from('inspection_photos')
             .insert({ item_id: itemId, storage_path: path, uploaded_by: user!.id }).select().single();
