@@ -6,7 +6,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
@@ -197,10 +196,9 @@ export default function InspectionScreen() {
           await supabase.from('inspection_items').update({ condition: rs.condition, notes: rs.notes.trim() || null }).eq('id', itemId);
         }
         if (rs.newPhotoUri) {
-          const base64 = await FileSystem.readAsStringAsync(rs.newPhotoUri, { encoding: FileSystem.EncodingType.Base64 });
-          const buf = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+          const blob = await (await fetch(rs.newPhotoUri)).blob();
           const path = `inspections/${selectedReport.id}/${itemId}_${rs.newPhotoName}`;
-          const { error: upErr } = await supabase.storage.from('documents').upload(path, buf, { contentType: rs.newMimeType });
+          const { error: upErr } = await supabase.storage.from('documents').upload(path, blob, { contentType: rs.newMimeType });
           if (upErr) throw upErr;
           await supabase.from('inspection_photos').insert({ item_id: itemId, storage_path: path, uploaded_by: user!.id });
         }
@@ -235,10 +233,9 @@ export default function InspectionScreen() {
           await supabase.from('inspection_items').update({ condition: rs.condition, notes: rs.notes.trim() || null }).eq('id', itemId);
         }
         if (rs.newPhotoUri) {
-          const base64 = await FileSystem.readAsStringAsync(rs.newPhotoUri, { encoding: FileSystem.EncodingType.Base64 });
-          const buf = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+          const blob = await (await fetch(rs.newPhotoUri)).blob();
           const path = `inspections/${selectedReport.id}/${itemId}_${rs.newPhotoName}`;
-          const { error: upErr } = await supabase.storage.from('documents').upload(path, buf, { contentType: rs.newMimeType });
+          const { error: upErr } = await supabase.storage.from('documents').upload(path, blob, { contentType: rs.newMimeType });
           if (upErr) throw upErr;
           const { data: pData } = await supabase.from('inspection_photos')
             .insert({ item_id: itemId, storage_path: path, uploaded_by: user!.id }).select().single();

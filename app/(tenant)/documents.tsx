@@ -4,7 +4,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import { DocumentRow, DocumentCategory } from '@/lib/types';
@@ -51,15 +50,14 @@ export default function TenantDocumentsScreen() {
     setShowCatModal(false);
     setUploading(true);
     try {
-      const base64 = await FileSystem.readAsStringAsync(pendingFile.uri, { encoding: FileSystem.EncodingType.Base64 });
-      const arrayBuffer = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+      const blob = await (await fetch(pendingFile.uri)).blob();
       const path = `${user!.id}/${unitId}/${Date.now()}_${pendingFile.name}`;
-      const { error: upErr } = await supabase.storage.from('documents').upload(path, arrayBuffer, { contentType: pendingFile.mimeType });
+      const { error: upErr } = await supabase.storage.from('documents').upload(path, blob, { contentType: pendingFile.mimeType });
       if (upErr) throw upErr;
       const { error: dbErr } = await supabase.from('documents').insert({
         unit_id: unitId, uploaded_by: user!.id,
         name: pendingFile.name, category,
-        storage_path: path, file_size: arrayBuffer.length,
+        storage_path: path, file_size: blob.size,
       });
       if (dbErr) throw dbErr;
       await fetchDocs(unitId);

@@ -4,7 +4,6 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Clipboard from 'expo-clipboard';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -12,21 +11,9 @@ import { useAuthStore } from '@/stores/authStore';
 import { PropertyRow, UnitRow, ExpenseRow, ExpenseCategory, DocumentRow, DocumentCategory, LeaseRow } from '@/lib/types';
 import { Ionicons } from '@expo/vector-icons';
 
-// Konverter base64-streng til Uint8Array uten atob (fungerer i React Native)
-function base64ToUint8Array(base64: string): Uint8Array {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-  const str = base64.replace(/=+$/, '');
-  const bytes: number[] = [];
-  for (let i = 0; i < str.length; i += 4) {
-    const e1 = chars.indexOf(str[i]);
-    const e2 = chars.indexOf(str[i + 1]);
-    const e3 = chars.indexOf(str[i + 2]);
-    const e4 = chars.indexOf(str[i + 3]);
-    bytes.push((e1 << 2) | (e2 >> 4));
-    if (e3 !== -1) bytes.push(((e2 & 15) << 4) | (e3 >> 2));
-    if (e4 !== -1) bytes.push(((e3 & 3) << 6) | e4);
-  }
-  return new Uint8Array(bytes);
+async function uriToBlob(uri: string): Promise<Blob> {
+  const response = await fetch(uri);
+  return response.blob();
 }
 
 const DOC_CATEGORIES: { key: DocumentCategory; label: string; icon: string; color: string }[] = [
@@ -135,15 +122,14 @@ export default function PropertyDetailScreen() {
     setShowDocCatModal(false);
     setUploadingDoc(true);
     try {
-      const base64 = await FileSystem.readAsStringAsync(pendingDoc.uri, { encoding: FileSystem.EncodingType.Base64 });
-      const byteArray = base64ToUint8Array(base64);
+      const blob = await uriToBlob(pendingDoc.uri);
       const path = `${user!.id}/${docsUnit.id}/${Date.now()}_${pendingDoc.name}`;
-      const { error: upErr } = await supabase.storage.from('documents').upload(path, byteArray, { contentType: pendingDoc.mimeType });
+      const { error: upErr } = await supabase.storage.from('documents').upload(path, blob, { contentType: pendingDoc.mimeType });
       if (upErr) throw upErr;
       await supabase.from('documents').insert({
         unit_id: docsUnit.id, uploaded_by: user!.id,
         name: pendingDoc.name, category,
-        storage_path: path, file_size: byteArray.length,
+        storage_path: path, file_size: blob.size,
       });
       await fetchDocs(docsUnit.id);
     } catch (e: any) {
