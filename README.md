@@ -10,7 +10,9 @@ Norsk mobil-app som samler all kommunikasjon mellom utleier og leietaker på ett
 
 - Node.js 18+
 - [Expo CLI](https://docs.expo.dev/get-started/installation/)
+- [EAS CLI](https://docs.expo.dev/eas/) — `npm install -g eas-cli`
 - Supabase-prosjekt (se [supabase.com](https://supabase.com))
+- Apple Developer-konto (for TestFlight/App Store)
 - iOS Simulator / Android Emulator, eller Expo Go på fysisk enhet
 
 ### Installasjon
@@ -23,12 +25,18 @@ npm install
 
 ### Miljøvariabler
 
-Opprett en `.env`-fil i rotkatalogen:
+Kopier `.env.example` og fyll inn verdiene:
+
+```bash
+cp .env.example .env
+```
 
 ```env
 EXPO_PUBLIC_SUPABASE_URL=https://<ditt-prosjekt>.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=<din-anon-nøkkel>
 ```
+
+> ⚠️ `.env` skal aldri committes. Legg produksjonsvariabler inn i EAS Secrets.
 
 ### Database
 
@@ -38,11 +46,53 @@ Kjør migrasjonen i Supabase SQL Editor:
 # Lim inn innholdet i supabase/migrations.sql
 ```
 
-### Start appen
+### Start appen (lokal utvikling)
 
 ```bash
 npx expo start
 ```
+
+---
+
+## Bygg og distribusjon
+
+### EAS Build
+
+Logg inn og koble til Expo-prosjektet:
+
+```bash
+eas login
+eas init   # første gang — oppretter prosjekt-ID på expo.dev
+```
+
+Legg til miljøvariabler som EAS Secrets (gjøres én gang):
+
+```bash
+eas secret:create --scope project --name EXPO_PUBLIC_SUPABASE_URL --value <verdi>
+eas secret:create --scope project --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value <verdi>
+```
+
+### TestFlight
+
+```bash
+# Bygg for iOS TestFlight
+eas build --platform ios --profile preview
+
+# Send til TestFlight automatisk etter bygg
+eas submit --platform ios --profile production
+```
+
+### App Store
+
+```bash
+# Produksjonsbygg
+eas build --platform ios --profile production
+
+# Submit til App Store Connect
+eas submit --platform ios --profile production
+```
+
+> Fyll inn `ascAppId` og `appleTeamId` i `eas.json` før submit.
 
 ---
 

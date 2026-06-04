@@ -1,22 +1,35 @@
 {
   "expo": {
-    "name": "Bolig Dialog",
+    "name": "BoligDialog",
     "slug": "boligdialog",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/boligdialog-logo.png",
+    "icon": "./assets/icon-1024.png",
     "userInterfaceStyle": "light",
     "scheme": "boligdialog",
+    "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "no.boligdialog.app"
+      "supportsTablet": false,
+      "bundleIdentifier": "no.boligdialog.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCameraUsageDescription": "BoligDialog bruker kameraet til å ta bilder av boligens tilstand i inn- og utflyttingsrapporter.",
+        "NSPhotoLibraryUsageDescription": "BoligDialog trenger tilgang til bilder for å legge ved dokumentasjon i rapporter og feilmeldinger.",
+        "NSPhotoLibraryAddUsageDescription": "BoligDialog lagrer bilder til bildebiblioteket ditt."
+      }
     },
     "android": {
       "package": "no.boligdialog.app",
+      "versionCode": 1,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/transperant-icon.png",
+        "foregroundImage": "./assets/icon-1024.png",
         "backgroundColor": "#ffffff"
       },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ],
       "predictiveBackGestureEnabled": false
     },
     "web": {
@@ -25,7 +38,27 @@
     "plugins": [
       "expo-secure-store",
       "expo-router",
-      "@react-native-community/datetimepicker"
-    ]
+      "@react-native-community/datetimepicker",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash.png",
+          "imageWidth": 300,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "BoligDialog bruker kameraet til å ta bilder av boligens tilstand."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "boligdialog"
+      }
+    }
   }
 }
