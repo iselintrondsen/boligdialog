@@ -29,10 +29,12 @@ export default function TenantLayout() {
         tabBarStyle: {
           backgroundColor: '#FFFFFF',
           borderTopColor: '#E5E7EB',
-          paddingBottom: 4,
-          height: 60,
+          paddingBottom: 24,
+          paddingTop: 8,
+          height: 80,
         },
         tabBarLabelStyle: { fontSize: 11, fontWeight: '500' },
+        tabBarIconStyle: { marginBottom: 2 },
       }}
     >
       <Tabs.Screen

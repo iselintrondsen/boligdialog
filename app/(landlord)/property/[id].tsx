@@ -12,6 +12,24 @@ import { useAuthStore } from '@/stores/authStore';
 import { PropertyRow, UnitRow, ExpenseRow, ExpenseCategory, DocumentRow, DocumentCategory, LeaseRow } from '@/lib/types';
 import { Ionicons } from '@expo/vector-icons';
 
+// Base64 decode som fungerer i React Native (ingen atob-avhengighet)
+function decode(base64: string): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  let result = '';
+  let i = 0;
+  const str = base64.replace(/=+$/, '');
+  while (i < str.length) {
+    const enc1 = chars.indexOf(str[i++]);
+    const enc2 = chars.indexOf(str[i++]);
+    const enc3 = chars.indexOf(str[i++]);
+    const enc4 = chars.indexOf(str[i++]);
+    result += String.fromCharCode((enc1 << 2) | (enc2 >> 4));
+    if (enc3 !== -1) result += String.fromCharCode(((enc2 & 15) << 4) | (enc3 >> 2));
+    if (enc4 !== -1) result += String.fromCharCode(((enc3 & 3) << 6) | enc4);
+  }
+  return result;
+}
+
 const DOC_CATEGORIES: { key: DocumentCategory; label: string; icon: string; color: string }[] = [
   { key: 'contract',  label: 'Kontrakt',   icon: 'document-text-outline', color: '#1A56A0' },
   { key: 'rules',     label: 'Husregler',  icon: 'list-outline',           color: '#7C3AED' },
@@ -119,14 +137,18 @@ export default function PropertyDetailScreen() {
     setUploadingDoc(true);
     try {
       const base64 = await FileSystem.readAsStringAsync(pendingDoc.uri, { encoding: FileSystem.EncodingType.Base64 });
-      const arrayBuffer = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
+      const byteCharacters = decode(base64);
+      const byteArray = new Uint8Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteArray[i] = byteCharacters.charCodeAt(i);
+      }
       const path = `${user!.id}/${docsUnit.id}/${Date.now()}_${pendingDoc.name}`;
-      const { error: upErr } = await supabase.storage.from('documents').upload(path, arrayBuffer, { contentType: pendingDoc.mimeType });
+      const { error: upErr } = await supabase.storage.from('documents').upload(path, byteArray, { contentType: pendingDoc.mimeType });
       if (upErr) throw upErr;
       await supabase.from('documents').insert({
         unit_id: docsUnit.id, uploaded_by: user!.id,
         name: pendingDoc.name, category,
-        storage_path: path, file_size: arrayBuffer.length,
+        storage_path: path, file_size: byteArray.length,
       });
       await fetchDocs(docsUnit.id);
     } catch (e: any) {
@@ -501,22 +523,22 @@ export default function PropertyDetailScreen() {
                 </View>
                 <View style={s.unitActions}>
                   <TouchableOpacity style={s.iconBtn} onPress={() => openDocs(item)}>
-                    <Ionicons name="document-text-outline" size={18} color="#7C3AED" />
+                    <Ionicons name="document-text-outline" size={22} color="#7C3AED" />
                   </TouchableOpacity>
                   <TouchableOpacity style={s.iconBtn} onPress={() => openExpenses(item)}>
-                    <Ionicons name="wallet-outline" size={18} color="#10B981" />
+                    <Ionicons name="wallet-outline" size={22} color="#10B981" />
                   </TouchableOpacity>
                   <TouchableOpacity style={s.iconBtn} onPress={() => router.push({ pathname: '/(landlord)/inspection', params: { unit_id: item.id, unit_number: item.unit_number } } as any)}>
-                    <Ionicons name="clipboard-outline" size={18} color="#F59E0B" />
+                    <Ionicons name="clipboard-outline" size={22} color="#F59E0B" />
                   </TouchableOpacity>
                   {pastLeases.length > 0 && (
                     <TouchableOpacity style={s.iconBtn} onPress={() => { setHistoryUnit(item); setShowHistoryModal(true); }}>
-                      <Ionicons name="time-outline" size={18} color="#6B7280" />
+                      <Ionicons name="time-outline" size={22} color="#6B7280" />
                     </TouchableOpacity>
                   )}
                   {!activeLease && (
                     <TouchableOpacity style={s.iconBtn} onPress={() => { setSelectedUnit(item); setShowInviteModal(true); }}>
-                      <Ionicons name="mail-outline" size={18} color={BLUE} />
+                      <Ionicons name="mail-outline" size={22} color={BLUE} />
                     </TouchableOpacity>
                   )}
                   <TouchableOpacity style={s.iconBtn} onPress={() => {
@@ -529,7 +551,7 @@ export default function PropertyDetailScreen() {
                     });
                     setShowUnitSettingsModal(true);
                   }}>
-                    <Ionicons name="settings-outline" size={18} color="#9CA3AF" />
+                    <Ionicons name="settings-outline" size={22} color="#9CA3AF" />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -822,7 +844,7 @@ export default function PropertyDetailScreen() {
                         if (Platform.OS === 'android') setShowDatePicker(false);
                         if (selectedDate) setExpenseForm(p => ({ ...p, date: selectedDate }));
                       }}
-                      style={{ marginTop: 8 }}
+                      style={{ marginTop: 8, width: '100%' }}
                     />
                   )}
                   {showDatePicker && Platform.OS === 'ios' && (
@@ -1015,7 +1037,7 @@ const s = StyleSheet.create({
   badge: { alignSelf: 'flex-start', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
   badgeText: { fontSize: 12, fontWeight: '600' },
   unitActions: { flexDirection: 'row', gap: 4 },
-  iconBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#F5F7FA', alignItems: 'center', justifyContent: 'center' },
+  iconBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#F5F7FA', alignItems: 'center', justifyContent: 'center' },
   empty: { alignItems: 'center', paddingVertical: 40, gap: 12 },
   emptyText: { color: '#6B7280', textAlign: 'center', fontSize: 14 },
   modal: { flex: 1, backgroundColor: '#fff' },
