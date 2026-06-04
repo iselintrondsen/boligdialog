@@ -8,6 +8,11 @@
     "userInterfaceStyle": "light",
     "scheme": "boligdialog",
     "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "no.boligdialog.app",
@@ -39,15 +44,6 @@
       "expo-secure-store",
       "expo-router",
       "@react-native-community/datetimepicker",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/splash.png",
-          "imageWidth": 300,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
-        }
-      ],
       [
         "expo-camera",
         {
