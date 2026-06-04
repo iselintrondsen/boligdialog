@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Modal, TextInput, StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Clipboard from 'expo-clipboard';
@@ -12,22 +12,21 @@ import { useAuthStore } from '@/stores/authStore';
 import { PropertyRow, UnitRow, ExpenseRow, ExpenseCategory, DocumentRow, DocumentCategory, LeaseRow } from '@/lib/types';
 import { Ionicons } from '@expo/vector-icons';
 
-// Base64 decode som fungerer i React Native (ingen atob-avhengighet)
-function decode(base64: string): string {
+// Konverter base64-streng til Uint8Array uten atob (fungerer i React Native)
+function base64ToUint8Array(base64: string): Uint8Array {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-  let result = '';
-  let i = 0;
   const str = base64.replace(/=+$/, '');
-  while (i < str.length) {
-    const enc1 = chars.indexOf(str[i++]);
-    const enc2 = chars.indexOf(str[i++]);
-    const enc3 = chars.indexOf(str[i++]);
-    const enc4 = chars.indexOf(str[i++]);
-    result += String.fromCharCode((enc1 << 2) | (enc2 >> 4));
-    if (enc3 !== -1) result += String.fromCharCode(((enc2 & 15) << 4) | (enc3 >> 2));
-    if (enc4 !== -1) result += String.fromCharCode(((enc3 & 3) << 6) | enc4);
+  const bytes: number[] = [];
+  for (let i = 0; i < str.length; i += 4) {
+    const e1 = chars.indexOf(str[i]);
+    const e2 = chars.indexOf(str[i + 1]);
+    const e3 = chars.indexOf(str[i + 2]);
+    const e4 = chars.indexOf(str[i + 3]);
+    bytes.push((e1 << 2) | (e2 >> 4));
+    if (e3 !== -1) bytes.push(((e2 & 15) << 4) | (e3 >> 2));
+    if (e4 !== -1) bytes.push(((e3 & 3) << 6) | e4);
   }
-  return result;
+  return new Uint8Array(bytes);
 }
 
 const DOC_CATEGORIES: { key: DocumentCategory; label: string; icon: string; color: string }[] = [
@@ -137,11 +136,7 @@ export default function PropertyDetailScreen() {
     setUploadingDoc(true);
     try {
       const base64 = await FileSystem.readAsStringAsync(pendingDoc.uri, { encoding: FileSystem.EncodingType.Base64 });
-      const byteCharacters = decode(base64);
-      const byteArray = new Uint8Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteArray[i] = byteCharacters.charCodeAt(i);
-      }
+      const byteArray = base64ToUint8Array(base64);
       const path = `${user!.id}/${docsUnit.id}/${Date.now()}_${pendingDoc.name}`;
       const { error: upErr } = await supabase.storage.from('documents').upload(path, byteArray, { contentType: pendingDoc.mimeType });
       if (upErr) throw upErr;
@@ -500,7 +495,7 @@ export default function PropertyDetailScreen() {
             <Text style={s.emptyText}>Ingen enheter ennå. Legg til en enhet.</Text>
           </View>
         }
-        renderItem={({ item }) => {
+        renderItem={useCallback(({ item }: { item: UnitWithInvite }) => {
           const st = statusLabel(item.invite_status);
           const activeLease = leases.find(l => l.unit_id === item.id && !l.ended_at);
           const pastLeases = leases.filter(l => l.unit_id === item.id && l.ended_at);
@@ -557,7 +552,7 @@ export default function PropertyDetailScreen() {
               </View>
             </View>
           );
-        }}
+        }, [leases, units])}
       />
 
       {/* Add / Edit Unit Modal */}
