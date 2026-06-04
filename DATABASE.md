@@ -136,7 +136,7 @@ PostgreSQL via Supabase. Alle tabeller har Row Level Security aktivert.
 | `lease_end` | date? | |
 | `created_at` | timestamptz | |
 
-> `tenant_id` er en cache for rask oppslag. `leases`-tabellen er sannhetskilden.
+> `tenant_id` er en cache for raskt oppslag. `leases`-tabellen er sannhetskilden.
 
 ---
 
@@ -314,4 +314,171 @@ users (1) ──< properties (1) ──< units (1) ──< leases
                                           (1) ──< documents
                                           (1) ──< expenses
                                           (1) ──< inspection_reports (1) ──< inspection_items (1) ──< inspection_photos
+```
+
+---
+
+## ER-Diagram
+
+```mermaid
+erDiagram
+    users {
+        uuid id PK
+        text email
+        text full_name
+        enum role
+        text avatar_url
+        text push_token
+        timestamptz created_at
+    }
+
+    properties {
+        uuid id PK
+        uuid landlord_id FK
+        text address
+        text city
+        text postal_code
+        text description
+        timestamptz created_at
+    }
+
+    units {
+        uuid id PK
+        uuid property_id FK
+        text unit_number
+        int floor
+        int size_sqm
+        int monthly_rent
+        uuid tenant_id FK
+        date lease_start
+        date lease_end
+        timestamptz created_at
+    }
+
+    leases {
+        uuid id PK
+        uuid unit_id FK
+        uuid tenant_id FK
+        date started_at
+        date ended_at
+        timestamptz created_at
+    }
+
+    invitations {
+        uuid id PK
+        uuid unit_id FK
+        uuid landlord_id FK
+        text email
+        text token
+        enum status
+        timestamptz expires_at
+        timestamptz created_at
+    }
+
+    messages {
+        uuid id PK
+        uuid unit_id FK
+        uuid sender_id FK
+        text content
+        text image_url
+        timestamptz read_at
+        timestamptz created_at
+    }
+
+    issues {
+        uuid id PK
+        uuid unit_id FK
+        uuid tenant_id FK
+        text title
+        text description
+        enum category
+        enum status
+        timestamptz resolved_at
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    issue_images {
+        uuid id PK
+        uuid issue_id FK
+        text storage_path
+        timestamptz created_at
+    }
+
+    documents {
+        uuid id PK
+        uuid unit_id FK
+        uuid uploaded_by FK
+        text name
+        enum category
+        text storage_path
+        int file_size
+        timestamptz created_at
+    }
+
+    expenses {
+        uuid id PK
+        uuid unit_id FK
+        uuid landlord_id FK
+        int amount
+        enum category
+        text description
+        date date
+        timestamptz created_at
+    }
+
+    inspection_reports {
+        uuid id PK
+        uuid unit_id FK
+        uuid landlord_id FK
+        uuid lease_id FK
+        enum type
+        enum status
+        text notes
+        timestamptz tenant_signed_at
+        uuid tenant_signed_by FK
+        timestamptz locked_at
+        timestamptz created_at
+    }
+
+    inspection_items {
+        uuid id PK
+        uuid report_id FK
+        enum category
+        enum condition
+        text notes
+        text tenant_comment
+        timestamptz created_at
+    }
+
+    inspection_photos {
+        uuid id PK
+        uuid item_id FK
+        text storage_path
+        uuid uploaded_by FK
+        timestamptz created_at
+    }
+
+    users ||--o{ properties : "eier (landlord_id)"
+    properties ||--o{ units : "har (property_id)"
+    units ||--o{ leases : "har (unit_id)"
+    users ||--o{ leases : "leietaker (tenant_id)"
+    units ||--o{ invitations : "har (unit_id)"
+    users ||--o{ invitations : "utleier (landlord_id)"
+    units ||--o{ messages : "tilhører (unit_id)"
+    users ||--o{ messages : "sender (sender_id)"
+    units ||--o{ issues : "har (unit_id)"
+    users ||--o{ issues : "innmelder (tenant_id)"
+    issues ||--o{ issue_images : "har (issue_id)"
+    units ||--o{ documents : "har (unit_id)"
+    users ||--o{ documents : "lastet opp (uploaded_by)"
+    units ||--o{ expenses : "har (unit_id)"
+    users ||--o{ expenses : "utleier (landlord_id)"
+    units ||--o{ inspection_reports : "har (unit_id)"
+    users ||--o{ inspection_reports : "utleier (landlord_id)"
+    leases ||--o{ inspection_reports : "knyttet til (lease_id)"
+    users ||--o{ inspection_reports : "signert av (tenant_signed_by)"
+    inspection_reports ||--o{ inspection_items : "har (report_id)"
+    inspection_items ||--o{ inspection_photos : "har (item_id)"
+    users ||--o{ inspection_photos : "lastet opp (uploaded_by)"
 ```
