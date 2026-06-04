@@ -381,6 +381,7 @@
       display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px;
       padding-bottom: 48px; border-bottom: 1px solid rgba(255,255,255,0.1);
     }
+    .footer-brand { display: flex; flex-direction: column; align-items: flex-start; }
     .footer-brand img { height: 72px; object-fit: contain; margin-bottom: 14px; }
     .footer-brand p { color: rgba(255,255,255,0.45); font-size: 14px; line-height: 1.65; max-width: 260px; }
     .footer-col h4 { font-size: 12px; font-weight: 700; margin-bottom: 18px; opacity: 0.85; letter-spacing: 0.8px; text-transform: uppercase; }
@@ -388,9 +389,32 @@
     .footer-col a:hover { color: #fff; }
     .footer-bottom {
       max-width: 1100px; margin: 28px auto 0;
-      display: flex; justify-content: space-between; align-items: center;
+      display: flex; justify-content: center; align-items: center;
       font-size: 13px; color: rgba(255,255,255,0.3);
     }
+    /* Personvern modal */
+    .pv-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      z-index: 1000; align-items: center; justify-content: center; padding: 24px;
+    }
+    .pv-overlay.open { display: flex; }
+    .pv-modal {
+      background: #fff; border-radius: 16px; max-width: 680px; width: 100%;
+      max-height: 80vh; overflow-y: auto; padding: 40px 40px 32px;
+      position: relative; color: var(--dark);
+    }
+    .pv-modal h2 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+    .pv-modal .pv-date { font-size: 13px; color: var(--gray); margin-bottom: 28px; }
+    .pv-modal h3 { font-size: 15px; font-weight: 700; margin: 22px 0 8px; }
+    .pv-modal p, .pv-modal li { font-size: 14px; line-height: 1.7; color: #374151; }
+    .pv-modal ul { padding-left: 20px; margin: 6px 0; }
+    .pv-close {
+      position: absolute; top: 16px; right: 16px;
+      background: #F3F4F6; border: none; border-radius: 50%;
+      width: 32px; height: 32px; cursor: pointer; font-size: 18px;
+      display: flex; align-items: center; justify-content: center; color: var(--dark);
+    }
+    .pv-close:hover { background: #E5E7EB; }
 
     /* ── RESPONSIVE ── */
     @media (max-width: 1100px) {
@@ -946,19 +970,65 @@
     <div class="footer-col">
       <h4>Selskap</h4>
       <a href="#">Om oss</a>
-      <a href="#">Personvern</a>
+      <a href="#" onclick="event.preventDefault();document.getElementById('pvOverlay').classList.add('open')">Personvern</a>
       <a href="#">Vilkår</a>
       <a href="#">Kontakt</a>
     </div>
   </div>
   <div class="footer-bottom">
     <span>© 2026 BoligDialog AS · Alle rettigheter forbeholdt</span>
-    <div style="display:flex;gap:20px;">
-      <a href="#" style="color:rgba(255,255,255,0.45);font-size:13px;text-decoration:none;">Personvern</a>
-      <a href="#" style="color:rgba(255,255,255,0.45);font-size:13px;text-decoration:none;">Vilkår</a>
-    </div>
   </div>
 </footer>
+
+<!-- PERSONVERN MODAL -->
+<div class="pv-overlay" id="pvOverlay">
+  <div class="pv-modal">
+    <button class="pv-close" onclick="document.getElementById('pvOverlay').classList.remove('open')">✕</button>
+    <h2>Personvernerklæring</h2>
+    <p class="pv-date">Sist oppdatert: juni 2026</p>
+
+    <h3>1. Behandlingsansvarlig</h3>
+    <p>BoligDialog AS er behandlingsansvarlig for personopplysningene som behandles i appen og på denne nettsiden. Kontakt oss på <strong>kontakt@boligdialog.no</strong> ved spørsmål om personvern.</p>
+
+    <h3>2. Hvilke opplysninger samler vi inn?</h3>
+    <p>Vi samler inn følgende opplysninger når du bruker BoligDialog:</p>
+    <ul>
+      <li>Navn og e-postadresse (ved registrering)</li>
+      <li>Rolle (utleier eller leietaker)</li>
+      <li>Profilbilde (valgfritt)</li>
+      <li>Innhold du selv oppretter: meldinger, feilmeldinger, dokumenter, inspeksjonsrapporter og utgifter</li>
+      <li>Bilder lastet opp i forbindelse med feilmeldinger og rapporter</li>
+      <li>Push-token for varsler (valgfritt)</li>
+    </ul>
+
+    <h3>3. Formål og rettslig grunnlag</h3>
+    <p>Opplysningene brukes til å:</p>
+    <ul>
+      <li>Levere og drifte tjenesten (avtaleoppfyllelse, jf. GDPR art. 6(1)(b))</li>
+      <li>Sende push-varsler og e-poster knyttet til leieforholdet (berettiget interesse)</li>
+      <li>Oppfylle eventuelle lovpålagte plikter</li>
+    </ul>
+
+    <h3>4. Lagring og sikkerhet</h3>
+    <p>Data lagres hos <strong>Supabase</strong> på servere i EU (Frankfurt). All kommunikasjon er kryptert med TLS. Vi benytter Row Level Security (RLS) i databasen, slik at hver bruker kun har tilgang til egne data.</p>
+
+    <h3>5. Deling med tredjeparter</h3>
+    <p>Vi deler ikke personopplysninger med tredjeparter for kommersielle formål. Underleverandører som benyttes:</p>
+    <ul>
+      <li><strong>Supabase Inc.</strong> — database, autentisering og fillagring</li>
+      <li><strong>Expo / Expo Go</strong> — push-varsler</li>
+    </ul>
+
+    <h3>6. Dine rettigheter</h3>
+    <p>Du har rett til innsyn, retting, sletting og dataportabilitet. Du kan også trekke tilbake samtykke og klage til <strong>Datatilsynet</strong>. Send forespørsel til <strong>kontakt@boligdialog.no</strong>.</p>
+
+    <h3>7. Sletting av data</h3>
+    <p>Du kan slette kontoen din i appen under Profil → Slett konto. All personlig informasjon slettes innen 30 dager. Historiske leiedata (uten personidentifiserende informasjon) kan beholdes for statistikkformål.</p>
+
+    <h3>8. Informasjonskapsler</h3>
+    <p>Denne nettsiden bruker ingen sporingscookies. Vi bruker kun teknisk nødvendige cookies for å holde deg innlogget i appen.</p>
+  </div>
+</div>
 
 <script>
   const observer = new IntersectionObserver((entries) => {
@@ -969,6 +1039,10 @@
       }
     });
   }, { threshold: 0.1 });
+
+  document.getElementById('pvOverlay').addEventListener('click', function(e) {
+    if (e.target === this) this.classList.remove('open');
+  });
 
   document.querySelectorAll('.feature-card, .step').forEach(el => {
     el.style.opacity = '0';
