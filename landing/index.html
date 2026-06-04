@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BoligDialog – Enklere hverdag for utleier og leietaker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue: #1A56A0;
+      --blue-light: #EBF4FF;
+      --green: #10B981;
+      --amber: #F59E0B;
+      --red: #EF4444;
+      --purple: #7C3AED;
+      --bg: #F5F7FA;
+      --dark: #1A1A2E;
+      --gray: #6B7280;
+      --gray-light: #E5E7EB;
+      --white: #ffffff;
+    }
+
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Inter', sans-serif; background: var(--white); color: var(--dark); overflow-x: hidden; }
+
+    ion-icon { display: block; }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(255,255,255,0.92); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--gray-light);
+      padding: 0 48px; height: 68px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-logo { display: flex; align-items: center; text-decoration: none; }
+    .nav-logo img { height: 52px; }
+    .nav-links { display: flex; align-items: center; gap: 36px; }
+    .nav-links a { text-decoration: none; color: var(--gray); font-size: 15px; font-weight: 500; transition: color .2s; }
+    .nav-links a:hover { color: var(--blue); }
+    .nav-cta {
+      background: var(--blue); color: #fff !important;
+      border-radius: 10px; padding: 11px 24px;
+      font-weight: 700; font-size: 14px; text-decoration: none;
+      transition: opacity .2s;
+    }
+    .nav-cta:hover { opacity: 0.88; }
+
+    /* ── HERO ── */
+    .hero {
+      min-height: 100vh;
+      background: linear-gradient(160deg, #EBF4FF 0%, #F5F7FA 55%, #E8F5EE 100%);
+      display: flex; align-items: center;
+      padding: 100px 64px 80px;
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: ''; position: absolute; top: -200px; right: -100px;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(26,86,160,0.07) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    .hero-left {
+      flex: 1; max-width: 520px; padding-right: 48px;
+      display: flex; flex-direction: column; justify-content: center;
+    }
+    .hero-right {
+      flex: 1; display: flex; align-items: flex-end; justify-content: center;
+    }
+    .hero h1 {
+      font-size: clamp(34px, 4vw, 60px); font-weight: 900;
+      line-height: 1.08; letter-spacing: -2px;
+      color: var(--dark); margin-bottom: 20px;
+    }
+    .hero h1 em { font-style: normal; color: var(--blue); }
+    .hero p {
+      font-size: clamp(15px, 1.4vw, 18px); color: var(--gray);
+      margin-bottom: 40px; line-height: 1.7;
+    }
+    .hero-buttons { display: flex; gap: 14px; flex-wrap: wrap; }
+    .btn-primary {
+      background: var(--blue); color: #fff; padding: 16px 32px; border-radius: 14px;
+      font-weight: 700; font-size: 16px; text-decoration: none;
+      display: flex; align-items: center; gap: 10px;
+      box-shadow: 0 8px 28px rgba(26,86,160,0.32);
+      transition: transform .2s, box-shadow .2s;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 14px 36px rgba(26,86,160,0.42); }
+    .btn-secondary {
+      background: #fff; color: var(--dark); padding: 16px 32px; border-radius: 14px;
+      font-weight: 700; font-size: 16px; text-decoration: none;
+      border: 1.5px solid var(--gray-light);
+      display: flex; align-items: center; gap: 10px;
+      transition: border-color .2s, transform .2s;
+    }
+    .btn-secondary:hover { border-color: var(--blue); transform: translateY(-2px); }
+
+    /* ── PHONES ── */
+    .phones { display: flex; align-items: flex-end; justify-content: center; gap: 20px; position: relative; z-index: 1; }
+
+    /* iPhone 16 Pro frame — thin light gray */
+    .phone {
+      width: 228px;
+      position: relative;
+      background: #E2E5EA;
+      border-radius: 48px;
+      padding: 5px;
+      box-shadow:
+        0 0 0 1px #D1D5DB,
+        0 24px 60px rgba(0,0,0,0.15),
+        0 6px 16px rgba(0,0,0,0.07);
+    }
+    .phone.center { transform: translateY(-28px) scale(1.06); z-index: 2; }
+
+    /* Volume buttons left */
+    .phone::before {
+      content: '';
+      position: absolute;
+      left: -2px; top: 88px;
+      width: 2px; height: 24px;
+      background: #C4C9D4;
+      border-radius: 2px 0 0 2px;
+      box-shadow: 0 32px 0 #C4C9D4, 0 56px 0 #C4C9D4;
+    }
+    /* Power button right */
+    .phone::after {
+      content: '';
+      position: absolute;
+      right: -2px; top: 98px;
+      width: 2px; height: 44px;
+      background: #C4C9D4;
+      border-radius: 0 2px 2px 0;
+    }
+
+    .phone-inner {
+      background: #F5F7FA;
+      border-radius: 43px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* Dynamic Island */
+    .phone-notch {
+      background: transparent;
+      height: 30px;
+      width: 100%;
+      display: flex; align-items: center; justify-content: center;
+      position: relative; z-index: 5;
+    }
+    .phone-notch-pill {
+      width: 72px; height: 20px;
+      background: #1a1a22;
+      border-radius: 100px;
+    }
+
+    /* ── SCREEN PARTS ── */
+    .screen { background: #F5F7FA; }
+    .screen-header {
+      background: #F5F7FA; padding: 8px 12px 4px;
+      display: flex; flex-direction: column; align-items: center; gap: 2px;
+    }
+    .screen-logo-wrap { display: flex; align-items: center; gap: 5px; }
+    .screen-logo-wrap img { height: 28px; object-fit: contain; }
+    .screen-role { font-size: 8px; color: var(--gray); font-weight: 500; }
+
+    .screen-body { padding: 8px 10px 58px; display: flex; flex-direction: column; gap: 7px; }
+
+    .s-title { font-size: 9px; font-weight: 700; color: var(--dark); }
+
+    .stat-row { display: flex; gap: 5px; }
+    .stat-card {
+      flex: 1; background: #fff; border-radius: 11px; padding: 7px 4px;
+      text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    .stat-num { font-size: 15px; font-weight: 800; color: var(--dark); }
+    .stat-lbl { font-size: 7px; color: var(--gray); font-weight: 500; margin-top: 1px; }
+
+    .prop-card {
+      background: #fff; border-radius: 11px; padding: 9px 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    .prop-addr { font-size: 9px; font-weight: 700; color: var(--dark); }
+    .prop-sub { font-size: 7px; color: var(--gray); margin-top: 1px; }
+    .prop-units { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+    .chip { font-size: 7px; font-weight: 600; border-radius: 6px; padding: 2px 6px; }
+    .chip-blue { background: #EBF4FF; color: var(--blue); }
+    .chip-green { background: #ECFDF5; color: var(--green); }
+    .chip-amber { background: #FFFBEB; color: var(--amber); }
+    .chip-gray { background: #F3F4F6; color: var(--gray); }
+
+    .issue-card {
+      background: #fff; border-radius: 11px; padding: 8px 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      display: flex; align-items: center; gap: 7px;
+    }
+    .issue-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .issue-info { flex: 1; }
+    .issue-title-s { font-size: 8px; font-weight: 700; color: var(--dark); }
+    .issue-sub-s { font-size: 7px; color: var(--gray); margin-top: 1px; }
+
+    .announce-card {
+      background: linear-gradient(135deg, var(--blue) 0%, #2563EB 100%);
+      border-radius: 11px; padding: 9px 10px; color: #fff;
+    }
+    .ann-tag { font-size: 7px; font-weight: 700; opacity: 0.75; text-transform: uppercase; letter-spacing: 0.4px; margin-bottom: 3px; }
+    .ann-text { font-size: 8px; font-weight: 600; line-height: 1.4; }
+
+    .info-row { display: flex; gap: 5px; }
+    .info-card {
+      flex: 1; background: #fff; border-radius: 11px; padding: 7px 5px;
+      text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    .info-val { font-size: 9px; font-weight: 700; color: var(--dark); margin-top: 2px; }
+    .info-lbl { font-size: 7px; color: var(--gray); }
+
+    .msg-wrap { display: flex; flex-direction: column; gap: 4px; }
+    .msg { max-width: 82%; border-radius: 9px; padding: 5px 7px; font-size: 7.5px; line-height: 1.4; }
+    .msg-them { background: #fff; color: var(--dark); align-self: flex-start; box-shadow: 0 1px 3px rgba(0,0,0,0.07); }
+    .msg-me { background: var(--blue); color: #fff; align-self: flex-end; }
+    .msg-t { font-size: 6px; opacity: 0.55; text-align: right; margin-top: 1px; }
+
+    .insp-banner {
+      background: linear-gradient(135deg, var(--green) 0%, #059669 100%);
+      border-radius: 11px; padding: 9px 10px; color: #fff;
+    }
+    .insp-type-s { font-size: 7px; font-weight: 700; opacity: 0.8; text-transform: uppercase; }
+    .insp-title-s { font-size: 11px; font-weight: 800; margin-top: 2px; }
+    .insp-status-s { font-size: 7px; opacity: 0.85; margin-top: 2px; }
+
+    .room-card-s {
+      background: #fff; border-radius: 10px; padding: 7px 9px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    .room-row-s { display: flex; justify-content: space-between; align-items: center; }
+    .room-name-s { font-size: 8px; font-weight: 700; color: var(--dark); display: flex; align-items: center; gap: 4px; }
+    .room-name-s ion-icon { font-size: 10px; color: var(--blue); }
+    .room-note-s { font-size: 6.5px; color: var(--gray); margin-top: 2px; }
+    .cond { font-size: 7px; font-weight: 700; border-radius: 5px; padding: 2px 6px; }
+    .cond-g { background: #ECFDF5; color: var(--green); }
+    .cond-o { background: #FFFBEB; color: var(--amber); }
+    .cond-p { background: #FEF2F2; color: var(--red); }
+
+    .send-row-s {
+      background: var(--green); border-radius: 9px; padding: 7px 10px;
+      text-align: center; color: #fff; font-size: 8px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center; gap: 5px;
+    }
+    .send-row-s ion-icon { font-size: 10px; }
+
+    .tab-bar {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: #fff; border-top: 1px solid #E5E7EB;
+      height: 52px; display: flex; align-items: center; padding: 0 4px 4px;
+    }
+    .tab-item {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 1px;
+    }
+    .tab-item ion-icon { font-size: 22px; color: var(--gray); }
+    .tab-item.active ion-icon { color: var(--blue); }
+    .tab-lbl { font-size: 6.5px; color: var(--gray); font-weight: 500; }
+    .tab-item.active .tab-lbl { color: var(--blue); }
+
+    /* ── SECTIONS ── */
+    section { padding: 100px 24px; }
+    .section-header { text-align: center; margin-bottom: 64px; }
+    .section-tag {
+      display: inline-block; background: var(--blue-light); color: var(--blue);
+      font-size: 12px; font-weight: 700; padding: 6px 16px;
+      border-radius: 100px; margin-bottom: 16px; letter-spacing: 0.8px; text-transform: uppercase;
+    }
+    .section-header h2 {
+      font-size: clamp(28px, 4vw, 52px); font-weight: 900;
+      letter-spacing: -2px; color: var(--dark); line-height: 1.08;
+    }
+    .section-header p {
+      color: var(--gray); font-size: 18px; max-width: 480px;
+      margin: 16px auto 0; line-height: 1.65;
+    }
+
+    .features-grid {
+      max-width: 1100px; margin: 0 auto;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 20px;
+    }
+    .feature-card {
+      background: #fff; border-radius: 20px; padding: 28px;
+      border: 1px solid var(--gray-light);
+      transition: transform .25s, box-shadow .25s;
+    }
+    .feature-card:hover { transform: translateY(-4px); box-shadow: 0 20px 48px rgba(0,0,0,0.08); }
+    .feature-icon {
+      width: 52px; height: 52px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center; margin-bottom: 16px;
+    }
+    .feature-icon ion-icon { font-size: 24px; }
+    .feature-card h3 { font-size: 18px; font-weight: 700; color: var(--dark); margin-bottom: 8px; }
+    .feature-card p { color: var(--gray); font-size: 14px; line-height: 1.65; }
+
+    /* ── SPLIT ── */
+    .split-wrap { max-width: 1100px; margin: 0 auto; }
+    .split-section {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center;
+    }
+    .split-section.reverse { direction: rtl; }
+    .split-section.reverse > * { direction: ltr; }
+    .split-text .section-tag { display: inline-block; }
+    .split-text h2 {
+      font-size: clamp(28px, 3.5vw, 46px); font-weight: 900;
+      letter-spacing: -1.5px; color: var(--dark); line-height: 1.08; margin: 14px 0 16px;
+    }
+    .split-text p { color: var(--gray); font-size: 16px; line-height: 1.7; margin-bottom: 28px; }
+    .check-list { display: flex; flex-direction: column; gap: 13px; }
+    .check-item {
+      display: flex; align-items: flex-start; gap: 12px;
+      font-size: 15px; color: var(--dark); font-weight: 500; line-height: 1.4;
+    }
+    .check-item-icon {
+      flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%;
+      background: #ECFDF5; display: flex; align-items: center; justify-content: center; margin-top: 1px;
+    }
+    .check-item-icon ion-icon { font-size: 12px; color: var(--green); }
+    .phone-showcase { display: flex; justify-content: center; }
+
+    /* ── STEPS ── */
+    .steps-bg { background: linear-gradient(160deg, #EBF4FF 0%, #F5F7FA 100%); }
+    .steps {
+      max-width: 900px; margin: 0 auto;
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+    }
+    .step { text-align: center; padding: 36px 28px; }
+    .step-num {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: var(--blue); color: #fff;
+      font-size: 22px; font-weight: 900;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 20px;
+      box-shadow: 0 8px 20px rgba(26,86,160,0.28);
+    }
+    .step h3 { font-size: 18px; font-weight: 700; color: var(--dark); margin-bottom: 10px; }
+    .step p { color: var(--gray); font-size: 14px; line-height: 1.65; }
+
+    /* ── CTA ── */
+    .cta-section {
+      background: linear-gradient(135deg, #1A3F7A 0%, #1A56A0 60%, #2563EB 100%);
+      padding: 110px 24px; text-align: center; color: #fff;
+    }
+    .cta-section h2 {
+      font-size: clamp(30px, 5vw, 58px); font-weight: 900;
+      letter-spacing: -2px; margin-bottom: 18px; line-height: 1.08;
+    }
+    .cta-section p { font-size: 18px; opacity: 0.8; margin-bottom: 44px; max-width: 500px; margin-left: auto; margin-right: auto; }
+    .cta-buttons { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
+    .btn-white {
+      background: #fff; color: var(--blue); padding: 16px 32px; border-radius: 14px;
+      font-weight: 700; font-size: 16px; text-decoration: none;
+      display: flex; align-items: center; gap: 10px;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.2); transition: transform .2s;
+    }
+    .btn-white ion-icon { font-size: 20px; }
+    .btn-white:hover { transform: translateY(-2px); }
+    .btn-outline-white {
+      background: transparent; color: #fff; padding: 16px 32px; border-radius: 14px;
+      font-weight: 700; font-size: 16px; text-decoration: none;
+      border: 2px solid rgba(255,255,255,0.35);
+      display: flex; align-items: center; gap: 10px;
+      transition: border-color .2s;
+    }
+    .btn-outline-white ion-icon { font-size: 20px; }
+    .btn-outline-white:hover { border-color: rgba(255,255,255,0.8); }
+    .cta-note { font-size: 13px; opacity: 0.5; }
+
+    /* ── FOOTER ── */
+    footer { background: var(--dark); color: #fff; padding: 64px 24px 32px; }
+    .footer-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px;
+      padding-bottom: 48px; border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .footer-brand img { height: 48px; object-fit: contain; margin-bottom: 14px; }
+    .footer-brand p { color: rgba(255,255,255,0.45); font-size: 14px; line-height: 1.65; max-width: 260px; }
+    .footer-col h4 { font-size: 12px; font-weight: 700; margin-bottom: 18px; opacity: 0.85; letter-spacing: 0.8px; text-transform: uppercase; }
+    .footer-col a { display: block; color: rgba(255,255,255,0.45); font-size: 14px; text-decoration: none; margin-bottom: 11px; transition: color .2s; }
+    .footer-col a:hover { color: #fff; }
+    .footer-bottom {
+      max-width: 1100px; margin: 28px auto 0;
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 13px; color: rgba(255,255,255,0.3);
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 1100px) {
+      .hero { padding: 100px 40px 72px; }
+      .phone { width: 190px; }
+      .phone.center { transform: translateY(-22px) scale(1.05); }
+    }
+    @media (max-width: 900px) {
+      nav { padding: 0 20px; }
+      .nav-links { display: none; }
+      .hero { flex-direction: column; padding: 100px 24px 64px; text-align: center; }
+      .hero-left { padding-right: 0; max-width: 100%; }
+      .hero-buttons { justify-content: center; }
+      .hero-right { margin-top: 56px; width: 100%; }
+      .phones { gap: 10px; }
+      .phone { width: 150px; }
+      .phone.center { transform: translateY(-16px) scale(1.05); }
+      .split-section, .split-section.reverse { grid-template-columns: 1fr; gap: 48px; direction: ltr; }
+      .steps { grid-template-columns: 1fr; }
+      .footer-inner { grid-template-columns: 1fr 1fr; }
+      section { padding: 72px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">
+    <img src="../assets/transperant-icon2-cropped.png" alt="BoligDialog" />
+  </a>
+  <div class="nav-links">
+    <a href="#utleier">Funksjoner</a>
+    <a href="#howitworks">Slik fungerer det</a>
+    <a href="#utleier">Utleier</a>
+    <a href="#leietaker">Leietaker</a>
+  </div>
+  <a href="#cta" class="nav-cta">Last ned gratis</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+
+  <!-- LEFT: text -->
+  <div class="hero-left">
+    <h1>Eiendommen din.<br /><em>Kontroll. Trygghet. Dialog.</em></h1>
+    <p>BoligDialog samler all kommunikasjon mellom utleier og leietaker på ett sted — meldinger, feilmeldinger, dokumenter og rapporter.</p>
+    <div class="hero-buttons">
+      <a href="#cta" class="btn-primary">
+        <ion-icon name="logo-apple"></ion-icon>
+        Last ned for iOS
+      </a>
+      <a href="#cta" class="btn-secondary">
+        <ion-icon name="logo-android" style="color:var(--green)"></ion-icon>
+        Last ned for Android
+      </a>
+    </div>
+  </div>
+
+  <!-- RIGHT: phones -->
+  <div class="hero-right">
+  <div class="phones">
+
+    <!-- Phone 1: Landlord dashboard -->
+    <div class="phone">
+      <div class="phone-inner" style="height:490px;">
+        <div class="phone-notch"><div class="phone-notch-pill"></div></div>
+        <div class="screen">
+          <div class="screen-header">
+            <div class="screen-logo-wrap"><img src="../assets/transperant-icon2-cropped.png" /></div>
+          </div>
+          <div class="screen-body">
+            <div style="margin-bottom:2px;"><div style="font-size:7px;color:#6B7280;">Hei,</div><div style="font-size:12px;font-weight:700;color:#1A1A2E;">Iselin</div></div>
+            <div class="stat-row">
+              <div class="stat-card" style="background:#FEF2F2;">
+                <ion-icon name="alert-circle-outline" style="font-size:11px;color:#EF4444;margin:0 auto;display:block;"></ion-icon>
+                <div class="stat-num" style="font-size:13px;">2</div>
+                <div class="stat-lbl">Åpne feil</div>
+              </div>
+              <div class="stat-card" style="background:#FFFBEB;">
+                <ion-icon name="construct-outline" style="font-size:11px;color:#F59E0B;margin:0 auto;display:block;"></ion-icon>
+                <div class="stat-num" style="font-size:13px;">1</div>
+                <div class="stat-lbl">Behandles</div>
+              </div>
+              <div class="stat-card" style="background:#F0FDF4;">
+                <ion-icon name="business-outline" style="font-size:11px;color:#10B981;margin:0 auto;display:block;"></ion-icon>
+                <div class="stat-num" style="font-size:13px;">3</div>
+                <div class="stat-lbl">Leietakere</div>
+              </div>
+            </div>
+            <div class="issue-card" style="border-radius:11px;">
+              <ion-icon name="chatbubble-outline" style="font-size:14px;color:var(--blue);flex-shrink:0;"></ion-icon>
+              <div class="issue-info">
+                <div class="issue-title-s">Meldinger</div>
+                <div class="issue-sub-s">Chat med leietakerne dine</div>
+              </div>
+              <div style="font-size:14px;color:#9CA3AF;">›</div>
+            </div>
+            <div class="issue-card" style="border-radius:11px;">
+              <ion-icon name="construct-outline" style="font-size:14px;color:var(--blue);flex-shrink:0;"></ion-icon>
+              <div class="issue-info">
+                <div class="issue-title-s">Feilmeldinger</div>
+                <div class="issue-sub-s">2 åpne feil</div>
+              </div>
+              <div style="font-size:14px;color:#9CA3AF;">›</div>
+            </div>
+            <div class="issue-card" style="border-radius:11px;">
+              <ion-icon name="business-outline" style="font-size:14px;color:var(--blue);flex-shrink:0;"></ion-icon>
+              <div class="issue-info">
+                <div class="issue-title-s">Eiendommer</div>
+                <div class="issue-sub-s">Se og administrer eiendommene</div>
+              </div>
+              <div style="font-size:14px;color:#9CA3AF;">›</div>
+            </div>
+          </div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab-item active"><ion-icon name="grid-outline"></ion-icon><div class="tab-lbl">Hjem</div></div>
+          <div class="tab-item"><ion-icon name="business-outline"></ion-icon><div class="tab-lbl">Eiendommer</div></div>
+          <div class="tab-item"><ion-icon name="construct-outline"></ion-icon><div class="tab-lbl">Feilmelding</div></div>
+          <div class="tab-item"><ion-icon name="chatbubble-outline"></ion-icon><div class="tab-lbl">Meldinger</div></div>
+          <div class="tab-item"><ion-icon name="person-outline"></ion-icon><div class="tab-lbl">Profil</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phone 2: Inspection (CENTER) -->
+    <div class="phone center">
+      <div class="phone-inner" style="height:520px;">
+        <div class="phone-notch"><div class="phone-notch-pill"></div></div>
+        <div class="screen">
+          <div class="screen-header">
+            <div class="screen-logo-wrap"><img src="../assets/transperant-icon2-cropped.png" /></div>
+          </div>
+          <div class="screen-body">
+            <div class="insp-banner">
+              <div class="insp-type-s">Innflyttingsrapport</div>
+              <div class="insp-title-s">Kirkeveien 45 · 2A</div>
+              <div class="insp-status-s">Under utfylling · 4 av 5 rom</div>
+            </div>
+            <div class="s-title">Tilstandsvurdering</div>
+            <div class="room-card-s">
+              <div class="room-row-s">
+                <div class="room-name-s"><ion-icon name="restaurant-outline"></ion-icon>Kjøkken</div>
+                <div class="cond cond-g">Bra</div>
+              </div>
+              <div class="room-note-s">Rent og pent. Ingen synlige skader.</div>
+            </div>
+            <div class="room-card-s">
+              <div class="room-row-s">
+                <div class="room-name-s"><ion-icon name="water-outline"></ion-icon>Bad</div>
+                <div class="cond cond-o">Ok</div>
+              </div>
+              <div class="room-note-s">Kalkflekker på kran. Dokumentert.</div>
+            </div>
+            <div class="room-card-s">
+              <div class="room-row-s">
+                <div class="room-name-s"><ion-icon name="layers-outline"></ion-icon>Gulv</div>
+                <div class="cond cond-g">Bra</div>
+              </div>
+            </div>
+            <div class="room-card-s">
+              <div class="room-row-s">
+                <div class="room-name-s"><ion-icon name="square-outline"></ion-icon>Vegger</div>
+                <div class="cond cond-p">Dårlig</div>
+              </div>
+              <div class="room-note-s">Bulk i gang. Bilde lastet opp.</div>
+            </div>
+            <div class="room-card-s">
+              <div class="room-row-s">
+                <div class="room-name-s"><ion-icon name="ellipsis-horizontal-outline"></ion-icon>Annet</div>
+                <div class="cond cond-g">Bra</div>
+              </div>
+            </div>
+            <div class="send-row-s">
+              <ion-icon name="send-outline"></ion-icon>
+              Send til leietaker for signering
+            </div>
+          </div>
+        </div>
+        <div class="tab-bar">
+          <div class="tab-item"><ion-icon name="grid-outline"></ion-icon><div class="tab-lbl">Hjem</div></div>
+          <div class="tab-item active"><ion-icon name="business-outline"></ion-icon><div class="tab-lbl">Eiendommer</div></div>
+          <div class="tab-item"><ion-icon name="construct-outline"></ion-icon><div class="tab-lbl">Feilmelding</div></div>
+          <div class="tab-item"><ion-icon name="chatbubble-outline"></ion-icon><div class="tab-lbl">Meldinger</div></div>
+          <div class="tab-item"><ion-icon name="person-outline"></ion-icon><div class="tab-lbl">Profil</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phone 3: Tenant home -->
+    <div class="phone">
+      <div class="phone-inner" style="height:490px;">
+        <div class="phone-notch"><div class="phone-notch-pill"></div></div>
+        <div class="screen">
+          <div class="screen-header">
+            <div class="screen-logo-wrap"><img src="../assets/transperant-icon2-cropped.png" /></div>
+          </div>
+          <div class="screen-body">
+            <div style="margin-bottom:4px;"><div style="font-size:7px;color:#6B7280;">Hei,</div><div style="font-size:12px;font-weight:700;color:#1A1A2E;">Sara</div></div>
+            <!-- Announcement card — amber/yellow -->
+            <div style="background:#FFFBEB;border:1px solid #FCD34D;border-radius:10px;padding:8px 9px;display:flex;flex-direction:column;gap:4px;">
+              <div style="display:flex;align-items:center;gap:5px;">
+                <ion-icon name="megaphone" style="font-size:10px;color:#92400E;flex-shrink:0;"></ion-icon>
+                <span style="font-size:6.5px;font-weight:700;color:#92400E;letter-spacing:0.3px;flex:1;">VARSEL FRA UTLEIER</span>
+                <span style="font-size:6px;color:#B45309;">10. jun</span>
+              </div>
+              <div style="font-size:7.5px;color:#78350F;line-height:1.4;">Stengt vann mandag 10. juni kl. 09–12 pga. rørarbeid i kjeller.</div>
+            </div>
+            <!-- Lease card -->
+            <div style="background:#fff;border-radius:10px;padding:9px 10px;box-shadow:0 2px 5px rgba(0,0,0,0.05);">
+              <div style="font-size:6px;font-weight:600;color:#6B7280;letter-spacing:0.4px;margin-bottom:6px;">DITT LEIEFORHOLD</div>
+              <div style="font-size:9px;font-weight:600;color:#1A1A2E;">Kirkeveien 45, Enhet 2A</div>
+              <div style="font-size:7px;color:#6B7280;margin-top:1px;">5005 Bergen</div>
+              <div style="font-size:11px;font-weight:700;color:var(--blue);margin-top:4px;">12 500 kr/mnd</div>
+              <div style="display:flex;align-items:center;gap:4px;margin-top:5px;">
+                <ion-icon name="person-outline" style="font-size:9px;color:#6B7280;"></ion-icon>
+                <span style="font-size:7px;color:#6B7280;">Thomas Bergmann</span>
+              </div>
+            </div>
+            <!-- Report issue button -->
+            <div style="background:var(--blue);border-radius:10px;padding:9px 10px;display:flex;align-items:center;gap:8px;">
+              <ion-icon name="construct-outline" style="font-size:16px;color:#fff;flex-shrink:0;"></ion-icon>
+              <div style="flex:1;">
+                <div style="font-size:8.5px;font-weight:700;color:#fff;">Rapporter feil</div>
+                <div style="font-size:7px;color:#BFDBFE;">Beskriv og send til utleier</div>
+              </div>
+              <ion-icon name="chevron-forward" style="font-size:10px;color:rgba(255,255,255,0.6);"></ion-icon>
+            </div>
+            <!-- Quick links -->
+            <div style="display:flex;gap:6px;">
+              <div style="flex:1;background:#fff;border-radius:10px;padding:8px 6px;text-align:center;box-shadow:0 2px 5px rgba(0,0,0,0.05);">
+                <ion-icon name="chatbubble-outline" style="font-size:16px;color:var(--blue);display:block;margin:0 auto 3px;"></ion-icon>
+                <div style="font-size:7px;font-weight:500;color:#1A1A2E;">Meldinger</div>
+              </div>
+              <div style="flex:1;background:#fff;border-radius:10px;padding:8px 6px;text-align:center;box-shadow:0 2px 5px rgba(0,0,0,0.05);">
+                <ion-icon name="document-text-outline" style="font-size:16px;color:var(--blue);display:block;margin:0 auto 3px;"></ion-icon>
+                <div style="font-size:7px;font-weight:500;color:#1A1A2E;">Dokumenter</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tab-bar" style="padding:0 2px 4px;">
+          <div class="tab-item active" style="gap:0.5px;"><ion-icon name="home-outline" style="font-size:19px;"></ion-icon><div class="tab-lbl" style="font-size:5.5px;">Hjem</div></div>
+          <div class="tab-item" style="gap:0.5px;"><ion-icon name="construct-outline" style="font-size:19px;"></ion-icon><div class="tab-lbl" style="font-size:5.5px;">Feil</div></div>
+          <div class="tab-item" style="gap:0.5px;"><ion-icon name="chatbubble-outline" style="font-size:19px;"></ion-icon><div class="tab-lbl" style="font-size:5.5px;">Meldinger</div></div>
+          <div class="tab-item" style="gap:0.5px;"><ion-icon name="document-text-outline" style="font-size:19px;"></ion-icon><div class="tab-lbl" style="font-size:5.5px;">Dokumenter</div></div>
+          <div class="tab-item" style="gap:0.5px;"><ion-icon name="clipboard-outline" style="font-size:19px;"></ion-icon><div class="tab-lbl" style="font-size:5.5px;">Rapporter</div></div>
+          <div class="tab-item" style="gap:0.5px;"><ion-icon name="person-outline" style="font-size:19px;"></ion-icon><div class="tab-lbl" style="font-size:5.5px;">Profil</div></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  </div><!-- /hero-right -->
+
+</section>
+
+<!-- UTLEIER FEATURES -->
+<section id="utleier">
+  <div class="section-header">
+    <div class="section-tag">For utleier</div>
+    <h2>Full oversikt.<br />Alltid i kontroll.</h2>
+    <p>Administrer eiendommer, enheter og leietakere fra mobilen — uansett hvor du er.</p>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#EBF4FF;">
+        <ion-icon name="business-outline" style="color:var(--blue)"></ion-icon>
+      </div>
+      <h3>Eiendomsadministrasjon</h3>
+      <p>Hold oversikt over alle eiendommer og enheter. Se status, leietaker og leieinntekter på ett sted.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#ECFDF5;">
+        <ion-icon name="clipboard-outline" style="color:var(--green)"></ion-icon>
+      </div>
+      <h3>Inn- og utflyttingsrapporter</h3>
+      <p>Ta bilder rom for rom, vurder tilstand og send rapporten til leietaker for digital signering. Begge parter sikret.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#FFFBEB;">
+        <ion-icon name="wallet-outline" style="color:var(--amber)"></ion-icon>
+      </div>
+      <h3>Utgiftssporing per enhet</h3>
+      <p>Registrer vedlikehold, reparasjoner og forsikring. Full oversikt over hva hver enhet faktisk koster.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#FEF3C7;">
+        <ion-icon name="megaphone-outline" style="color:#D97706"></ion-icon>
+      </div>
+      <h3>Fellesvarsler til alle</h3>
+      <p>Send et varsel til alle leietakere i en eiendom med ett trykk — perfekt for planlagte arbeider.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#F5F3FF;">
+        <ion-icon name="document-text-outline" style="color:var(--purple)"></ion-icon>
+      </div>
+      <h3>Dokumentdeling</h3>
+      <p>Del kontrakter, husregler og kvitteringer direkte i appen. Alltid tilgjengelig for begge parter.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#FEF2F2;">
+        <ion-icon name="construct-outline" style="color:var(--red)"></ion-icon>
+      </div>
+      <h3>Feilmeldingshåndtering</h3>
+      <p>Motta feilmeldinger fra leietaker, oppdater status og hold begge parter informert underveis.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#F0FDF4;">
+        <ion-icon name="time-outline" style="color:var(--green)"></ion-icon>
+      </div>
+      <h3>Leiehistorikk per enhet</h3>
+      <p>Se alle tidligere og aktive leieforhold per enhet — med navn, periode og varighet. Alltid tilgjengelig, selv etter utflytting.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SPLIT: INSPECTION -->
+<section style="background:var(--bg);">
+  <div class="split-wrap">
+    <div class="split-section">
+      <div class="split-text">
+        <div class="section-tag">Innflyttingsrapport</div>
+        <h2>Dokumenter tilstanden.<br />Unngå konflikter.</h2>
+        <p>En god innflyttingsrapport er den beste forsikringen du har som utleier. Med BoligDialog tar du bilder rom for rom, setter tilstand og sender alt til leietaker for digital signering — på under 10 minutter.</p>
+        <div class="check-list">
+          <div class="check-item">
+            <div class="check-item-icon"><ion-icon name="checkmark-outline"></ion-icon></div>
+            Ta bilder direkte i appen — rom for rom
+          </div>
+          <div class="check-item">
+            <div class="check-item-icon"><ion-icon name="checkmark-outline"></ion-icon></div>
+            Merk eksisterende skader og slitasje
+          </div>
+          <div class="check-item">
+            <div class="check-item-icon"><ion-icon name="checkmark-outline"></ion-icon></div>
+            Leietaker kommenterer og signerer digitalt
+          </div>
+          <div class="check-item">
+            <div class="check-item-icon"><ion-icon name="checkmark-outline"></ion-icon></div>
+            Rapporten låses — kan ikke endres i ettertid
+          </div>
+          <div class="check-item">
+            <div class="check-item-icon"><ion-icon name="checkmark-outline"></ion-icon></div>
+            Begge parter har alltid tilgang
+          </div>
+        </div>
+      </div>
+      <div class="phone-showcase">
+        <div class="phone" style="width:230px;">
+          <div class="phone-inner" style="height:470px;">
+            <div class="phone-notch"><div class="phone-notch-pill"></div></div>
+            <div class="screen">
+              <div class="screen-header" style="flex-direction:row;justify-content:space-between;align-items:center;">
+                <ion-icon name="chevron-back-outline" style="font-size:14px;color:var(--blue)"></ion-icon>
+                <div style="font-size:9px;font-weight:700;color:var(--dark);">Innflyttingsrapport</div>
+                <div></div>
+              </div>
+              <div class="screen-body">
+                <div style="background:#ECFDF5;border-radius:11px;padding:9px 10px;display:flex;align-items:center;gap:7px;">
+                  <ion-icon name="lock-closed-outline" style="font-size:15px;color:var(--green);flex-shrink:0"></ion-icon>
+                  <div>
+                    <div style="font-size:8px;font-weight:700;color:#065F46;">Rapport låst og ferdigstilt</div>
+                    <div style="font-size:7px;color:#6B7280;">Signert av begge · 12. jan 2025</div>
+                  </div>
+                </div>
+                <div class="room-card-s">
+                  <div class="room-row-s">
+                    <div class="room-name-s"><ion-icon name="restaurant-outline"></ion-icon>Kjøkken</div>
+                    <div class="cond cond-g">Bra</div>
+                  </div>
+                </div>
+                <div class="room-card-s">
+                  <div class="room-row-s">
+                    <div class="room-name-s"><ion-icon name="water-outline"></ion-icon>Bad</div>
+                    <div class="cond cond-o">Ok</div>
+                  </div>
+                  <div class="room-note-s">Kalkflekker på dusjdør. Dokumentert.</div>
+                </div>
+                <div class="room-card-s">
+                  <div class="room-row-s">
+                    <div class="room-name-s"><ion-icon name="layers-outline"></ion-icon>Gulv</div>
+                    <div class="cond cond-g">Bra</div>
+                  </div>
+                </div>
+                <div class="room-card-s">
+                  <div class="room-row-s">
+                    <div class="room-name-s"><ion-icon name="square-outline"></ion-icon>Vegger</div>
+                    <div class="cond cond-g">Bra</div>
+                  </div>
+                </div>
+                <div class="room-card-s">
+                  <div class="room-row-s">
+                    <div class="room-name-s"><ion-icon name="ellipsis-horizontal-outline"></ion-icon>Annet</div>
+                    <div class="cond cond-g">Bra</div>
+                  </div>
+                </div>
+                <div style="background:#F5F3FF;border-radius:10px;padding:8px 10px;border:1px solid #DDD6FE;">
+                  <div style="font-size:7px;font-weight:700;color:var(--purple);text-transform:uppercase;margin-bottom:3px;">Leietakers kommentar</div>
+                  <div style="font-size:7.5px;color:#4C1D95;line-height:1.4;">Bekrefter at alt stemmer. Ingen ytterligere merknader.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LEIETAKER FEATURES -->
+<section id="leietaker">
+  <div class="section-header">
+    <div class="section-tag">For leietaker</div>
+    <h2>Alt du trenger.<br />Alltid tilgjengelig.</h2>
+    <p>Som leietaker har du alt om leieforholdet ditt samlet på ett sted — trygt og oversiktlig.</p>
+  </div>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#EBF4FF;">
+        <ion-icon name="chatbubble-outline" style="color:var(--blue)"></ion-icon>
+      </div>
+      <h3>Direkte dialog med utleier</h3>
+      <p>Chat direkte i appen. Ingen SMS, ingen e-post — alt loggføres automatisk og er alltid søkbart.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#FEF2F2;">
+        <ion-icon name="construct-outline" style="color:var(--red)"></ion-icon>
+      </div>
+      <h3>Rapporter feil enkelt</h3>
+      <p>Ta et bilde, beskriv problemet og send. Følg status fra åpen til løst — alt i appen.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#ECFDF5;">
+        <ion-icon name="clipboard-outline" style="color:var(--green)"></ion-icon>
+      </div>
+      <h3>Signer rapporter digitalt</h3>
+      <p>Gjennomgå innflyttingsrapporten, legg til egne kommentarer og signer digitalt på sekunder.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#F5F3FF;">
+        <ion-icon name="document-text-outline" style="color:var(--purple)"></ion-icon>
+      </div>
+      <h3>Dine dokumenter</h3>
+      <p>Leiekontrakt, husregler og kvitteringer — alltid tilgjengelig, aldri borte i en gammel e-post.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#FFFBEB;">
+        <ion-icon name="megaphone-outline" style="color:var(--amber)"></ion-icon>
+      </div>
+      <h3>Varsler fra utleier</h3>
+      <p>Få beskjed om planlagte arbeider, stengt vann og annen viktig informasjon direkte i appen.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon" style="background:#EBF4FF;">
+        <ion-icon name="home-outline" style="color:var(--blue)"></ion-icon>
+      </div>
+      <h3>Oversikt over leieforholdet</h3>
+      <p>Se leiestart, månedlig leie og detaljer om enheten din — samlet på hjemskjermen.</p>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="steps-bg" id="howitworks">
+  <div class="section-header">
+    <div class="section-tag">Slik fungerer det</div>
+    <h2>I gang på 3 minutter</h2>
+    <p>Enkel onboarding for både utleier og leietaker.</p>
+  </div>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">1</div>
+      <h3>Opprett konto</h3>
+      <p>Registrer deg som utleier eller leietaker. Tar under ett minutt.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <h3>Knytt til enhet</h3>
+      <p>Utleier legger inn eiendommen og sender en invitasjon til leietaker via e-post.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <h3>Ta i bruk</h3>
+      <p>Start med innflyttingsrapporten, del kontrakten og ha alt klart fra dag én.</p>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section" id="cta">
+  <h2>Klar for en enklere<br />utleie-hverdag?</h2>
+  <p>Gratis å laste ned. Ingen bindingstid. Kom i gang på under 3 minutter.</p>
+  <div class="cta-buttons">
+    <a href="#" class="btn-white">
+      <ion-icon name="logo-apple" style="color:var(--dark)"></ion-icon>
+      Last ned for iOS
+    </a>
+    <a href="#" class="btn-outline-white">
+      <ion-icon name="logo-android"></ion-icon>
+      Last ned for Android
+    </a>
+  </div>
+  <div class="cta-note">Tilgjengelig i App Store og Google Play · Gratis</div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <img src="../assets/transperant-icon2-cropped.png" alt="BoligDialog" />
+      <p>Enklere kommunikasjon mellom utleier og leietaker. Norsk app for norske forhold.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Produkt</h4>
+      <a href="#">Funksjoner</a>
+      <a href="#">Priser</a>
+      <a href="#">Last ned</a>
+      <a href="#">Nyheter</a>
+    </div>
+    <div class="footer-col">
+      <h4>For utleier</h4>
+      <a href="#">Eiendomsadmin</a>
+      <a href="#">Rapporter</a>
+      <a href="#">Utgiftssporing</a>
+      <a href="#">Varsler</a>
+    </div>
+    <div class="footer-col">
+      <h4>Selskap</h4>
+      <a href="#">Om oss</a>
+      <a href="#">Personvern</a>
+      <a href="#">Vilkår</a>
+      <a href="#">Kontakt</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2025 BoligDialog AS · Alle rettigheter forbeholdt</span>
+    <span>Laget med omhu i Norge</span>
+  </div>
+</footer>
+
+<script>
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.style.opacity = '1';
+        e.target.style.transform = 'translateY(0)';
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('.feature-card, .step').forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(24px)';
+    el.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+    observer.observe(el);
+  });
+</script>
+</body>
+</html>
