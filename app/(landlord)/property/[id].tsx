@@ -535,10 +535,23 @@ export default function PropertyDetailScreen() {
                     <Ionicons name="mail-outline" size={22} color={BLUE} />
                   </TouchableOpacity>
                 )}
+                <TouchableOpacity style={s.iconBtn} onPress={() => {
+                  toggleUnitActions(item.id);
+                  setSettingsUnit(item);
+                  setUnitForm({
+                    unit_number: item.unit_number,
+                    floor: item.floor != null ? String(item.floor) : '',
+                    size_sqm: item.size_sqm != null ? String(item.size_sqm) : '',
+                    monthly_rent: item.monthly_rent != null ? String(item.monthly_rent) : '',
+                  });
+                  setShowUnitSettingsModal(true);
+                }}>
+                  <Ionicons name="settings-outline" size={22} color="#9CA3AF" />
+                </TouchableOpacity>
               </Animated.View>
             )}
             <TouchableOpacity style={[s.iconBtn, isExpanded && s.iconBtnActive]} onPress={() => toggleUnitActions(item.id)}>
-              <Ionicons name={isExpanded ? 'close-outline' : 'settings-outline'} size={22} color={isExpanded ? BLUE : '#9CA3AF'} />
+              <Ionicons name={isExpanded ? 'close-outline' : 'ellipsis-horizontal'} size={22} color={isExpanded ? BLUE : '#9CA3AF'} />
             </TouchableOpacity>
           </View>
         </View>
