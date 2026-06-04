@@ -28,7 +28,6 @@ export default function TenantDocumentsScreen() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [pendingFile, setPendingFile] = useState<PendingFile | null>(null);
-  const [showCatModal, setShowCatModal] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewVisible, setPreviewVisible] = useState(false);
 
@@ -45,18 +44,17 @@ export default function TenantDocumentsScreen() {
     });
   }, [user, fetchDocs]);
 
-  const uploadWithCategory = async (category: DocumentCategory) => {
-    if (!pendingFile || !unitId) return;
-    setShowCatModal(false);
+  const doUpload = async (file: PendingFile, category: DocumentCategory) => {
+    if (!unitId) return;
     setUploading(true);
     try {
-      const blob = await (await fetch(pendingFile.uri)).blob();
-      const path = `${user!.id}/${unitId}/${Date.now()}_${pendingFile.name}`;
-      const { error: upErr } = await supabase.storage.from('documents').upload(path, blob, { contentType: pendingFile.mimeType });
+      const blob = await (await fetch(file.uri)).blob();
+      const path = `${user!.id}/${unitId}/${Date.now()}_${file.name}`;
+      const { error: upErr } = await supabase.storage.from('documents').upload(path, blob, { contentType: file.mimeType });
       if (upErr) throw upErr;
       const { error: dbErr } = await supabase.from('documents').insert({
         unit_id: unitId, uploaded_by: user!.id,
-        name: pendingFile.name, category,
+        name: file.name, category,
         storage_path: path, file_size: blob.size,
       });
       if (dbErr) throw dbErr;
@@ -69,54 +67,59 @@ export default function TenantDocumentsScreen() {
     }
   };
 
-  const pickDocument = async () => {
+  const pickDocument = async (category: DocumentCategory) => {
     const result = await DocumentPicker.getDocumentAsync({
-      type: [
-        'application/pdf',
-        'application/msword',
+      type: ['application/pdf', 'application/msword',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         'application/vnd.ms-excel',
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'text/plain',
-        'image/*',
-        '*/*',
-      ],
+        'text/plain', 'image/*', '*/*'],
       copyToCacheDirectory: true,
     });
     if (result.canceled || !result.assets[0]) return;
     const a = result.assets[0];
-    setPendingFile({ uri: a.uri, name: a.name, mimeType: a.mimeType ?? 'application/octet-stream' });
-    setShowCatModal(true);
+    const file = { uri: a.uri, name: a.name, mimeType: a.mimeType ?? 'application/octet-stream' };
+    setPendingFile(file);
+    await doUpload(file, category);
   };
 
-  const pickImage = async () => {
+  const pickImage = async (category: DocumentCategory) => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') { Alert.alert('Tillatelse kreves', 'Gi tilgang til bildebiblioteket i innstillinger.'); return; }
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: 'images', quality: 0.85, allowsMultipleSelection: false });
     if (result.canceled || !result.assets[0]) return;
     const a = result.assets[0];
     const ext = a.mimeType === 'image/heic' ? 'heic' : (a.mimeType?.split('/')[1] ?? 'jpg');
-    setPendingFile({ uri: a.uri, name: a.fileName ?? `bilde_${Date.now()}.${ext}`, mimeType: a.mimeType ?? 'image/jpeg' });
-    setShowCatModal(true);
+    const file = { uri: a.uri, name: a.fileName ?? `bilde_${Date.now()}.${ext}`, mimeType: a.mimeType ?? 'image/jpeg' };
+    setPendingFile(file);
+    await doUpload(file, category);
   };
 
-  const takePhoto = async () => {
+  const takePhoto = async (category: DocumentCategory) => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') { Alert.alert('Tillatelse kreves', 'Gi tilgang til kameraet i innstillinger.'); return; }
     const result = await ImagePicker.launchCameraAsync({ quality: 0.85, mediaTypes: 'images' });
     if (result.canceled || !result.assets[0]) return;
     const a = result.assets[0];
     const ext = a.mimeType?.split('/')[1] ?? 'jpg';
-    setPendingFile({ uri: a.uri, name: `foto_${Date.now()}.${ext}`, mimeType: a.mimeType ?? 'image/jpeg' });
-    setShowCatModal(true);
+    const file = { uri: a.uri, name: `foto_${Date.now()}.${ext}`, mimeType: a.mimeType ?? 'image/jpeg' };
+    setPendingFile(file);
+    await doUpload(file, category);
+  };
+
+  const pickSource = (category: DocumentCategory) => {
+    Alert.alert('Velg fil', 'Hvor vil du hente filen fra?', [
+      { text: '📷  Ta bilde med kamera', onPress: () => takePhoto(category) },
+      { text: '🖼️  Velg fra bildebibliotek', onPress: () => pickImage(category) },
+      { text: '📄  Velg fil (PDF, Word, Excel…)', onPress: () => pickDocument(category) },
+      { text: 'Avbryt', style: 'cancel' as const },
+    ]);
   };
 
   const showUploadOptions = () => {
-    Alert.alert('Last opp dokument', 'Velg kilde', [
-      { text: '📷  Ta bilde med kamera', onPress: takePhoto },
-      { text: '🖼️  Velg fra bildebibliotek', onPress: pickImage },
-      { text: '📄  Velg fil (PDF, Word, Excel…)', onPress: pickDocument },
-      { text: 'Avbryt', style: 'cancel' },
+    Alert.alert('Velg kategori', 'Hva slags dokument er dette?', [
+      ...DOC_CATEGORIES.map(c => ({ text: c.label, onPress: () => pickSource(c.key) })),
+      { text: 'Avbryt', style: 'cancel' as const },
     ]);
   };
 
@@ -193,28 +196,6 @@ export default function TenantDocumentsScreen() {
           );
         }}
       />
-
-      {/* Category picker modal */}
-      <Modal visible={showCatModal} transparent animationType="slide">
-        <TouchableOpacity style={s.backdrop} activeOpacity={1} onPress={() => { setShowCatModal(false); setPendingFile(null); }}>
-          <View style={s.sheet}>
-            <View style={s.sheetHandle} />
-            <Text style={s.sheetTitle}>Velg kategori</Text>
-            {pendingFile && <Text style={s.sheetFile} numberOfLines={1}>{pendingFile.name}</Text>}
-            <View style={s.catList}>
-              {CATEGORIES.map(cat => (
-                <TouchableOpacity key={cat.key} style={s.catRow} onPress={() => uploadWithCategory(cat.key)}>
-                  <View style={[s.catIcon, { backgroundColor: cat.color + '18' }]}>
-                    <Ionicons name={cat.icon as any} size={20} color={cat.color} />
-                  </View>
-                  <Text style={s.catLabel}>{cat.label}</Text>
-                  <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        </TouchableOpacity>
-      </Modal>
 
       {/* Image preview */}
       <Modal visible={previewVisible} transparent animationType="fade">

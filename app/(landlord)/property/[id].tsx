@@ -103,7 +103,6 @@ export default function PropertyDetailScreen() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewVisible, setPreviewVisible] = useState(false);
   const [pendingDoc, setPendingDoc] = useState<{ uri: string; name: string; mimeType: string } | null>(null);
-  const [showDocCatModal, setShowDocCatModal] = useState(false);
 
   const fetchDocs = async (uid: string) => {
     const { data } = await supabase.from('documents').select('*').eq('unit_id', uid).order('created_at', { ascending: false });
@@ -118,18 +117,17 @@ export default function PropertyDetailScreen() {
     setLoadingDocs(false);
   };
 
-  const uploadWithCategory = async (category: DocumentCategory) => {
-    if (!pendingDoc || !docsUnit) return;
-    setShowDocCatModal(false);
+  const doUpload = async (doc: { uri: string; name: string; mimeType: string }, category: DocumentCategory) => {
+    if (!docsUnit) return;
     setUploadingDoc(true);
     try {
-      const blob = await uriToBlob(pendingDoc.uri);
-      const path = `${user!.id}/${docsUnit.id}/${Date.now()}_${pendingDoc.name}`;
-      const { error: upErr } = await supabase.storage.from('documents').upload(path, blob, { contentType: pendingDoc.mimeType });
+      const blob = await uriToBlob(doc.uri);
+      const path = `${user!.id}/${docsUnit.id}/${Date.now()}_${doc.name}`;
+      const { error: upErr } = await supabase.storage.from('documents').upload(path, blob, { contentType: doc.mimeType });
       if (upErr) throw upErr;
       await supabase.from('documents').insert({
         unit_id: docsUnit.id, uploaded_by: user!.id,
-        name: pendingDoc.name, category,
+        name: doc.name, category,
         storage_path: path, file_size: blob.size,
       });
       await fetchDocs(docsUnit.id);
@@ -141,46 +139,53 @@ export default function PropertyDetailScreen() {
     }
   };
 
-  const handlePickDoc = async () => {
+  const pickSource = (category: DocumentCategory) => {
+    Alert.alert('Velg fil', 'Hvor vil du hente filen fra?', [
+      { text: '📷  Ta bilde med kamera', onPress: () => handleTakePhoto(category) },
+      { text: '🖼️  Velg fra bildebibliotek', onPress: () => handlePickImage(category) },
+      { text: '📄  Velg fil (PDF, Word, Excel…)', onPress: () => handlePickDoc(category) },
+      { text: 'Avbryt', style: 'cancel' as const },
+    ]);
+  };
+
+  const handlePickDoc = async (category: DocumentCategory) => {
     const result = await DocumentPicker.getDocumentAsync({
-      type: [
-        'application/pdf',
-        'application/msword',
+      type: ['application/pdf', 'application/msword',
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         'application/vnd.ms-excel',
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'text/plain',
-        'image/*',
-        '*/*',
-      ],
+        'text/plain', 'image/*', '*/*'],
       copyToCacheDirectory: true,
     });
     if (result.canceled || !result.assets[0]) return;
     const a = result.assets[0];
-    setPendingDoc({ uri: a.uri, name: a.name, mimeType: a.mimeType ?? 'application/octet-stream' });
-    setShowDocCatModal(true);
+    const doc = { uri: a.uri, name: a.name, mimeType: a.mimeType ?? 'application/octet-stream' };
+    setPendingDoc(doc);
+    await doUpload(doc, category);
   };
 
-  const handlePickImage = async () => {
+  const handlePickImage = async (category: DocumentCategory) => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') { Alert.alert('Tillatelse kreves', 'Gi tilgang til bildebiblioteket i innstillinger.'); return; }
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: 'images', quality: 0.85, allowsMultipleSelection: false });
     if (result.canceled || !result.assets[0]) return;
     const a = result.assets[0];
     const ext = a.mimeType === 'image/heic' ? 'heic' : (a.mimeType?.split('/')[1] ?? 'jpg');
-    setPendingDoc({ uri: a.uri, name: a.fileName ?? `bilde_${Date.now()}.${ext}`, mimeType: a.mimeType ?? 'image/jpeg' });
-    setShowDocCatModal(true);
+    const doc = { uri: a.uri, name: a.fileName ?? `bilde_${Date.now()}.${ext}`, mimeType: a.mimeType ?? 'image/jpeg' };
+    setPendingDoc(doc);
+    await doUpload(doc, category);
   };
 
-  const handleTakePhoto = async () => {
+  const handleTakePhoto = async (category: DocumentCategory) => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') { Alert.alert('Tillatelse kreves', 'Gi tilgang til kameraet i innstillinger.'); return; }
     const result = await ImagePicker.launchCameraAsync({ quality: 0.85, mediaTypes: 'images' });
     if (result.canceled || !result.assets[0]) return;
     const a = result.assets[0];
     const ext = a.mimeType?.split('/')[1] ?? 'jpg';
-    setPendingDoc({ uri: a.uri, name: `foto_${Date.now()}.${ext}`, mimeType: a.mimeType ?? 'image/jpeg' });
-    setShowDocCatModal(true);
+    const doc = { uri: a.uri, name: `foto_${Date.now()}.${ext}`, mimeType: a.mimeType ?? 'image/jpeg' };
+    setPendingDoc(doc);
+    await doUpload(doc, category);
   };
 
   const handleDocPress = async (doc: DocumentRow) => {
@@ -206,11 +211,9 @@ export default function PropertyDetailScreen() {
   };
 
   const showUploadOptions = () => {
-    Alert.alert('Last opp dokument', 'Velg kilde', [
-      { text: '📷  Ta bilde med kamera', onPress: handleTakePhoto },
-      { text: '🖼️  Velg fra bildebibliotek', onPress: handlePickImage },
-      { text: '📄  Velg fil (PDF, Word, Excel…)', onPress: handlePickDoc },
-      { text: 'Avbryt', style: 'cancel' },
+    Alert.alert('Velg kategori', 'Hva slags dokument er dette?', [
+      ...DOC_CATEGORIES.map(c => ({ text: c.label, onPress: () => pickSource(c.key) })),
+      { text: 'Avbryt', style: 'cancel' as const },
     ]);
   };
 
@@ -683,27 +686,6 @@ export default function PropertyDetailScreen() {
       </Modal>
 
       {/* Document category picker */}
-      <Modal visible={showDocCatModal} transparent animationType="slide">
-        <TouchableOpacity style={s.backdrop} activeOpacity={1} onPress={() => { setShowDocCatModal(false); setPendingDoc(null); }}>
-          <View style={s.sheet}>
-            <View style={s.sheetHandle} />
-            <Text style={s.sheetTitle}>Velg kategori</Text>
-            {pendingDoc && <Text style={s.sheetFile} numberOfLines={1}>{pendingDoc.name}</Text>}
-            <View style={s.catList}>
-              {DOC_CATEGORIES.map(cat => (
-                <TouchableOpacity key={cat.key} style={s.catRow} onPress={() => uploadWithCategory(cat.key)}>
-                  <View style={[s.catIcon, { backgroundColor: cat.color + '18' }]}>
-                    <Ionicons name={cat.icon as any} size={20} color={cat.color} />
-                  </View>
-                  <Text style={s.catLabel}>{cat.label}</Text>
-                  <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
       {/* Unit Settings Modal */}
       <Modal visible={showUnitSettingsModal} animationType="slide" presentationStyle="pageSheet">
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
