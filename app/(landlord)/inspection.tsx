@@ -131,7 +131,7 @@ export default function InspectionScreen() {
   const startNewReport = async (type: InspectionReportType) => {
     const { data, error } = await supabase
       .from('inspection_reports')
-      .insert({ unit_id: unit_id!, landlord_id: user!.id, type, status: 'draft', notes: null })
+      .insert({ unit_id: unit_id!, landlord_id: user!.id, type, status: 'draft', notes: null, tenant_signed_at: null, tenant_signed_by: null, locked_at: null })
       .select().single();
     if (error) { Alert.alert('Feil', error.message); return; }
     const report = data as InspectionReportRow;
@@ -188,7 +188,7 @@ export default function InspectionScreen() {
         let itemId = rs.itemId;
         if (!itemId) {
           const { data, error } = await supabase.from('inspection_items')
-            .insert({ report_id: selectedReport.id, category: room.key, condition: rs.condition, notes: rs.notes.trim() || null })
+            .insert({ report_id: selectedReport.id, category: room.key, condition: rs.condition, notes: rs.notes.trim() || null, tenant_comment: null })
             .select().single();
           if (error) throw error;
           itemId = (data as InspectionItemRow).id;
@@ -224,7 +224,7 @@ export default function InspectionScreen() {
         let itemId = rs.itemId;
         if (!itemId) {
           const { data, error } = await supabase.from('inspection_items')
-            .insert({ report_id: selectedReport.id, category: room.key, condition: rs.condition, notes: rs.notes.trim() || null })
+            .insert({ report_id: selectedReport.id, category: room.key, condition: rs.condition, notes: rs.notes.trim() || null, tenant_comment: null })
             .select().single();
           if (error) throw error;
           itemId = (data as InspectionItemRow).id;

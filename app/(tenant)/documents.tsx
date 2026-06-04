@@ -118,7 +118,7 @@ export default function TenantDocumentsScreen() {
 
   const showUploadOptions = () => {
     Alert.alert('Velg kategori', 'Hva slags dokument er dette?', [
-      ...DOC_CATEGORIES.map(c => ({ text: c.label, onPress: () => pickSource(c.key) })),
+      ...CATEGORIES.map((c: { key: DocumentCategory; label: string }) => ({ text: c.label, onPress: () => pickSource(c.key) })),
       { text: 'Avbryt', style: 'cancel' as const },
     ]);
   };
