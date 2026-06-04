@@ -1,25 +1,31 @@
 {
   "expo": {
-    "name": "boligdialog",
+    "name": "Bolig Dialog",
     "slug": "boligdialog",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/boligdialog-logo.png",
     "userInterfaceStyle": "light",
+    "scheme": "boligdialog",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "no.boligdialog.app"
     },
     "android": {
+      "package": "no.boligdialog.app",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "foregroundImage": "./assets/transperant-icon.png",
+        "backgroundColor": "#ffffff"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-router",
+      "@react-native-community/datetimepicker"
+    ]
   }
 }
