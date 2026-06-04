@@ -23,7 +23,8 @@ const DOC_CATEGORIES: { key: DocumentCategory; label: string; icon: string; colo
   { key: 'other',     label: 'Annet',      icon: 'attach-outline',         color: '#6B7280' },
 ];
 
-function isImage(name: string) { return /\.(jpg|jpeg|png|gif|webp)$/i.test(name); }
+function isImage(name: string) { return /\.(jpg|jpeg|png|gif|webp|heic|heif|bmp|tiff|tif|svg)$/i.test(name); }
+function isPdf(name: string) { return /\.pdf$/i.test(name); }
 
 function fmtDate(d: string) {
   return new Date(d).toLocaleDateString('nb-NO', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -141,7 +142,19 @@ export default function PropertyDetailScreen() {
   };
 
   const handlePickDoc = async () => {
-    const result = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
+    const result = await DocumentPicker.getDocumentAsync({
+      type: [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'text/plain',
+        'image/*',
+        '*/*',
+      ],
+      copyToCacheDirectory: true,
+    });
     if (result.canceled || !result.assets[0]) return;
     const a = result.assets[0];
     setPendingDoc({ uri: a.uri, name: a.name, mimeType: a.mimeType ?? 'application/octet-stream' });
@@ -151,10 +164,22 @@ export default function PropertyDetailScreen() {
   const handlePickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') { Alert.alert('Tillatelse kreves', 'Gi tilgang til bildebiblioteket i innstillinger.'); return; }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: 'images', quality: 0.85, allowsMultipleSelection: false });
     if (result.canceled || !result.assets[0]) return;
     const a = result.assets[0];
-    setPendingDoc({ uri: a.uri, name: a.fileName ?? `bilde_${Date.now()}.jpg`, mimeType: a.mimeType ?? 'image/jpeg' });
+    const ext = a.mimeType === 'image/heic' ? 'heic' : (a.mimeType?.split('/')[1] ?? 'jpg');
+    setPendingDoc({ uri: a.uri, name: a.fileName ?? `bilde_${Date.now()}.${ext}`, mimeType: a.mimeType ?? 'image/jpeg' });
+    setShowDocCatModal(true);
+  };
+
+  const handleTakePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') { Alert.alert('Tillatelse kreves', 'Gi tilgang til kameraet i innstillinger.'); return; }
+    const result = await ImagePicker.launchCameraAsync({ quality: 0.85, mediaTypes: 'images' });
+    if (result.canceled || !result.assets[0]) return;
+    const a = result.assets[0];
+    const ext = a.mimeType?.split('/')[1] ?? 'jpg';
+    setPendingDoc({ uri: a.uri, name: `foto_${Date.now()}.${ext}`, mimeType: a.mimeType ?? 'image/jpeg' });
     setShowDocCatModal(true);
   };
 
@@ -181,9 +206,10 @@ export default function PropertyDetailScreen() {
   };
 
   const showUploadOptions = () => {
-    Alert.alert('Last opp', 'Velg type', [
-      { text: 'Bilde fra bibliotek', onPress: handlePickImage },
-      { text: 'Fil / dokument', onPress: handlePickDoc },
+    Alert.alert('Last opp dokument', 'Velg kilde', [
+      { text: '📷  Ta bilde med kamera', onPress: handleTakePhoto },
+      { text: '🖼️  Velg fra bildebibliotek', onPress: handlePickImage },
+      { text: '📄  Velg fil (PDF, Word, Excel…)', onPress: handlePickDoc },
       { text: 'Avbryt', style: 'cancel' },
     ]);
   };
