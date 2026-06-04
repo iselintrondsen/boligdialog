@@ -87,7 +87,7 @@ const s = StyleSheet.create({
   scroll: { flexGrow: 1 },
   container: { flex: 1, paddingHorizontal: 24, paddingTop: 40, paddingBottom: 32 },
   header: { alignItems: 'center', marginBottom: 48 },
-  logoImg: { width: 340, height: 270, marginBottom: 0 },
+  logoImg: { width: '100%', height: 220, marginBottom: 0 },
   subtitle: { fontSize: 16, color: '#6B7280', marginTop: 4 },
   form: { gap: 16 },
   label: { fontSize: 14, fontWeight: '500', color: '#1A1A2E', marginBottom: 6 },
