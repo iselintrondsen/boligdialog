@@ -814,14 +814,16 @@
           </div>
         </div>
       </div>
-      <div class="phone-showcase">
-        <div class="phone" style="width:230px;">
+      <div class="phone-showcase" style="display:flex;gap:16px;align-items:flex-start;">
+
+        <!-- Innflyttingsrapport -->
+        <div class="phone" style="width:200px;">
           <div class="phone-inner" style="height:470px;">
             <div class="phone-notch"><div class="phone-notch-pill"></div></div>
             <div class="screen">
               <div class="screen-header" style="flex-direction:row;justify-content:space-between;align-items:center;">
                 <ion-icon name="chevron-back-outline" style="font-size:14px;color:var(--blue)"></ion-icon>
-                <div style="font-size:9px;font-weight:700;color:var(--dark);">Innflyttingsrapport</div>
+                <div style="font-size:8.5px;font-weight:700;color:var(--dark);">Innflyttingsrapport</div>
                 <div></div>
               </div>
               <div class="screen-body">
@@ -829,7 +831,7 @@
                   <ion-icon name="lock-closed-outline" style="font-size:15px;color:var(--green);flex-shrink:0"></ion-icon>
                   <div>
                     <div style="font-size:8px;font-weight:700;color:#065F46;">Rapport låst og ferdigstilt</div>
-                    <div style="font-size:7px;color:#6B7280;">Signert av begge · 12. jan 2025</div>
+                    <div style="font-size:7px;color:#6B7280;">Signert av begge · 12. jan 2026</div>
                   </div>
                 </div>
                 <div class="room-card-s">
@@ -837,16 +839,9 @@
                     <div class="room-name-s"><ion-icon name="restaurant-outline"></ion-icon>Kjøkken</div>
                     <div class="cond cond-g">Bra</div>
                   </div>
-                  <div style="display:flex;gap:4px;margin-top:5px;align-items:center;">
-                    <div style="width:28px;height:22px;background:#F3F4F6;border-radius:4px;display:flex;align-items:center;justify-content:center;">
-                      <ion-icon name="image-outline" style="font-size:11px;color:#9CA3AF;"></ion-icon>
-                    </div>
-                    <div style="width:28px;height:22px;background:#F3F4F6;border-radius:4px;display:flex;align-items:center;justify-content:center;">
-                      <ion-icon name="image-outline" style="font-size:11px;color:#9CA3AF;"></ion-icon>
-                    </div>
-                    <div style="width:28px;height:22px;background:#EBF4FF;border-radius:4px;display:flex;align-items:center;justify-content:center;border:1px dashed #93C5FD;">
-                      <ion-icon name="camera-outline" style="font-size:11px;color:#3B82F6;"></ion-icon>
-                    </div>
+                  <div style="display:flex;gap:4px;margin-top:5px;">
+                    <div style="width:26px;height:20px;background:#F3F4F6;border-radius:4px;display:flex;align-items:center;justify-content:center;"><ion-icon name="image-outline" style="font-size:10px;color:#9CA3AF;"></ion-icon></div>
+                    <div style="width:26px;height:20px;background:#F3F4F6;border-radius:4px;display:flex;align-items:center;justify-content:center;"><ion-icon name="image-outline" style="font-size:10px;color:#9CA3AF;"></ion-icon></div>
                   </div>
                 </div>
                 <div class="room-card-s">
@@ -854,25 +849,15 @@
                     <div class="room-name-s"><ion-icon name="water-outline"></ion-icon>Bad</div>
                     <div class="cond cond-o">Ok</div>
                   </div>
-                  <div class="room-note-s">Kalkflekker på dusjdør. Dokumentert.</div>
-                  <div style="display:flex;gap:4px;margin-top:5px;align-items:center;">
-                    <div style="width:28px;height:22px;background:#F3F4F6;border-radius:4px;display:flex;align-items:center;justify-content:center;">
-                      <ion-icon name="image-outline" style="font-size:11px;color:#9CA3AF;"></ion-icon>
-                    </div>
-                    <div style="width:28px;height:22px;background:#EBF4FF;border-radius:4px;display:flex;align-items:center;justify-content:center;border:1px dashed #93C5FD;">
-                      <ion-icon name="camera-outline" style="font-size:11px;color:#3B82F6;"></ion-icon>
-                    </div>
+                  <div class="room-note-s">Kalkflekker på dusjdør.</div>
+                  <div style="display:flex;gap:4px;margin-top:5px;">
+                    <div style="width:26px;height:20px;background:#F3F4F6;border-radius:4px;display:flex;align-items:center;justify-content:center;"><ion-icon name="image-outline" style="font-size:10px;color:#9CA3AF;"></ion-icon></div>
                   </div>
                 </div>
                 <div class="room-card-s">
                   <div class="room-row-s">
                     <div class="room-name-s"><ion-icon name="layers-outline"></ion-icon>Gulv</div>
                     <div class="cond cond-g">Bra</div>
-                  </div>
-                  <div style="display:flex;gap:4px;margin-top:5px;align-items:center;">
-                    <div style="width:28px;height:22px;background:#EBF4FF;border-radius:4px;display:flex;align-items:center;justify-content:center;border:1px dashed #93C5FD;">
-                      <ion-icon name="camera-outline" style="font-size:11px;color:#3B82F6;"></ion-icon>
-                    </div>
                   </div>
                 </div>
                 <div class="room-card-s">
@@ -889,12 +874,79 @@
                 </div>
                 <div style="background:#F5F3FF;border-radius:10px;padding:8px 10px;border:1px solid #DDD6FE;">
                   <div style="font-size:7px;font-weight:700;color:var(--purple);text-transform:uppercase;margin-bottom:3px;">Leietakers kommentar</div>
-                  <div style="font-size:7.5px;color:#4C1D95;line-height:1.4;">Bekrefter at alt stemmer. Ingen ytterligere merknader.</div>
+                  <div style="font-size:7.5px;color:#4C1D95;line-height:1.4;">Bekrefter at alt stemmer.</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+
+        <!-- Utflyttingsrapport -->
+        <div class="phone" style="width:200px;margin-top:32px;">
+          <div class="phone-inner" style="height:470px;">
+            <div class="phone-notch"><div class="phone-notch-pill"></div></div>
+            <div class="screen">
+              <div class="screen-header" style="flex-direction:row;justify-content:space-between;align-items:center;">
+                <ion-icon name="chevron-back-outline" style="font-size:14px;color:var(--blue)"></ion-icon>
+                <div style="font-size:8.5px;font-weight:700;color:var(--dark);">Utflyttingsrapport</div>
+                <div></div>
+              </div>
+              <div class="screen-body">
+                <div style="background:#FEF3C7;border-radius:11px;padding:9px 10px;display:flex;align-items:center;gap:7px;">
+                  <ion-icon name="time-outline" style="font-size:15px;color:var(--amber);flex-shrink:0"></ion-icon>
+                  <div>
+                    <div style="font-size:8px;font-weight:700;color:#92400E;">Sendt til leietaker</div>
+                    <div style="font-size:7px;color:#6B7280;">Venter på signering</div>
+                  </div>
+                </div>
+                <div class="room-card-s">
+                  <div class="room-row-s">
+                    <div class="room-name-s"><ion-icon name="restaurant-outline"></ion-icon>Kjøkken</div>
+                    <div class="cond cond-g">Bra</div>
+                  </div>
+                  <div style="display:flex;gap:4px;margin-top:5px;">
+                    <div style="width:26px;height:20px;background:#F3F4F6;border-radius:4px;display:flex;align-items:center;justify-content:center;"><ion-icon name="image-outline" style="font-size:10px;color:#9CA3AF;"></ion-icon></div>
+                  </div>
+                </div>
+                <div class="room-card-s">
+                  <div class="room-row-s">
+                    <div class="room-name-s"><ion-icon name="water-outline"></ion-icon>Bad</div>
+                    <div class="cond cond-p">Dårlig</div>
+                  </div>
+                  <div class="room-note-s">Fuktskade under servant.</div>
+                  <div style="display:flex;gap:4px;margin-top:5px;">
+                    <div style="width:26px;height:20px;background:#F3F4F6;border-radius:4px;display:flex;align-items:center;justify-content:center;"><ion-icon name="image-outline" style="font-size:10px;color:#9CA3AF;"></ion-icon></div>
+                    <div style="width:26px;height:20px;background:#F3F4F6;border-radius:4px;display:flex;align-items:center;justify-content:center;"><ion-icon name="image-outline" style="font-size:10px;color:#9CA3AF;"></ion-icon></div>
+                  </div>
+                </div>
+                <div class="room-card-s">
+                  <div class="room-row-s">
+                    <div class="room-name-s"><ion-icon name="layers-outline"></ion-icon>Gulv</div>
+                    <div class="cond cond-o">Ok</div>
+                  </div>
+                  <div class="room-note-s">Noe slitasje ved inngang.</div>
+                </div>
+                <div class="room-card-s">
+                  <div class="room-row-s">
+                    <div class="room-name-s"><ion-icon name="square-outline"></ion-icon>Vegger</div>
+                    <div class="cond cond-g">Bra</div>
+                  </div>
+                </div>
+                <div class="room-card-s">
+                  <div class="room-row-s">
+                    <div class="room-name-s"><ion-icon name="ellipsis-horizontal-outline"></ion-icon>Annet</div>
+                    <div class="cond cond-g">Bra</div>
+                  </div>
+                </div>
+                <div style="background:#FEF2F2;border-radius:10px;padding:8px 10px;border:1px solid #FECACA;">
+                  <div style="font-size:7px;font-weight:700;color:var(--red);text-transform:uppercase;margin-bottom:3px;">Leietakers kommentar</div>
+                  <div style="font-size:7.5px;color:#991B1B;line-height:1.4;">Fuktskaden var der ved innflytting.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
