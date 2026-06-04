@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Modal, TextInput, StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { View, Text, FlatList, TouchableOpacity, Modal, TextInput, StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, Image, Animated } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Clipboard from 'expo-clipboard';
 import * as DocumentPicker from 'expo-document-picker';
@@ -107,6 +107,21 @@ export default function PropertyDetailScreen() {
 
   // Leases
   const [leases, setLeases] = useState<LeaseWithTenant[]>([]);
+  const [expandedUnitId, setExpandedUnitId] = useState<string | null>(null);
+  const slideAnim = useRef(new Animated.Value(0)).current;
+
+  const toggleUnitActions = useCallback((unitId: string) => {
+    if (expandedUnitId === unitId) {
+      Animated.timing(slideAnim, { toValue: 0, duration: 180, useNativeDriver: true }).start(() => {
+        setExpandedUnitId(null);
+      });
+    } else {
+      setExpandedUnitId(unitId);
+      slideAnim.setValue(0);
+      Animated.timing(slideAnim, { toValue: 1, duration: 220, useNativeDriver: true }).start();
+    }
+  }, [expandedUnitId, slideAnim]);
+
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [historyUnit, setHistoryUnit] = useState<UnitWithInvite | null>(null);
   const [endingLease, setEndingLease] = useState(false);
@@ -477,6 +492,7 @@ export default function PropertyDetailScreen() {
     const st = statusLabel(item.invite_status);
     const activeLease = leases.find(l => l.unit_id === item.id && !l.ended_at);
     const pastLeases = leases.filter(l => l.unit_id === item.id && l.ended_at);
+    const isExpanded = item.id === expandedUnitId;
     return (
       <View style={s.unitCard}>
         <View style={s.unitRow}>
@@ -495,42 +511,40 @@ export default function PropertyDetailScreen() {
             ) : null}
           </View>
           <View style={s.unitActions}>
-            <TouchableOpacity style={s.iconBtn} onPress={() => openDocs(item)}>
-              <Ionicons name="document-text-outline" size={22} color="#7C3AED" />
-            </TouchableOpacity>
-            <TouchableOpacity style={s.iconBtn} onPress={() => openExpenses(item)}>
-              <Ionicons name="wallet-outline" size={22} color="#10B981" />
-            </TouchableOpacity>
-            <TouchableOpacity style={s.iconBtn} onPress={() => router.push({ pathname: '/(landlord)/inspection', params: { unit_id: item.id, unit_number: item.unit_number } } as any)}>
-              <Ionicons name="clipboard-outline" size={22} color="#F59E0B" />
-            </TouchableOpacity>
-            {pastLeases.length > 0 && (
-              <TouchableOpacity style={s.iconBtn} onPress={() => { setHistoryUnit(item); setShowHistoryModal(true); }}>
-                <Ionicons name="time-outline" size={22} color="#6B7280" />
-              </TouchableOpacity>
+            {isExpanded && (
+              <Animated.View style={[s.expandedActions, {
+                opacity: slideAnim,
+                transform: [{ translateX: slideAnim.interpolate({ inputRange: [0, 1], outputRange: [60, 0] }) }],
+              }]}>
+                <TouchableOpacity style={s.iconBtn} onPress={() => { toggleUnitActions(item.id); openDocs(item); }}>
+                  <Ionicons name="document-text-outline" size={22} color="#7C3AED" />
+                </TouchableOpacity>
+                <TouchableOpacity style={s.iconBtn} onPress={() => { toggleUnitActions(item.id); openExpenses(item); }}>
+                  <Ionicons name="wallet-outline" size={22} color="#10B981" />
+                </TouchableOpacity>
+                <TouchableOpacity style={s.iconBtn} onPress={() => { toggleUnitActions(item.id); router.push({ pathname: '/(landlord)/inspection', params: { unit_id: item.id, unit_number: item.unit_number } } as any); }}>
+                  <Ionicons name="clipboard-outline" size={22} color="#F59E0B" />
+                </TouchableOpacity>
+                {pastLeases.length > 0 && (
+                  <TouchableOpacity style={s.iconBtn} onPress={() => { toggleUnitActions(item.id); setHistoryUnit(item); setShowHistoryModal(true); }}>
+                    <Ionicons name="time-outline" size={22} color="#6B7280" />
+                  </TouchableOpacity>
+                )}
+                {!activeLease && (
+                  <TouchableOpacity style={s.iconBtn} onPress={() => { toggleUnitActions(item.id); setSelectedUnit(item); setShowInviteModal(true); }}>
+                    <Ionicons name="mail-outline" size={22} color={BLUE} />
+                  </TouchableOpacity>
+                )}
+              </Animated.View>
             )}
-            {!activeLease && (
-              <TouchableOpacity style={s.iconBtn} onPress={() => { setSelectedUnit(item); setShowInviteModal(true); }}>
-                <Ionicons name="mail-outline" size={22} color={BLUE} />
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity style={s.iconBtn} onPress={() => {
-              setSettingsUnit(item);
-              setUnitForm({
-                unit_number: item.unit_number,
-                floor: item.floor != null ? String(item.floor) : '',
-                size_sqm: item.size_sqm != null ? String(item.size_sqm) : '',
-                monthly_rent: item.monthly_rent != null ? String(item.monthly_rent) : '',
-              });
-              setShowUnitSettingsModal(true);
-            }}>
-              <Ionicons name="settings-outline" size={22} color="#9CA3AF" />
+            <TouchableOpacity style={[s.iconBtn, isExpanded && s.iconBtnActive]} onPress={() => toggleUnitActions(item.id)}>
+              <Ionicons name={isExpanded ? 'close-outline' : 'settings-outline'} size={22} color={isExpanded ? BLUE : '#9CA3AF'} />
             </TouchableOpacity>
           </View>
         </View>
       </View>
     );
-  }, [leases, units]);
+  }, [leases, units, expandedUnitId, slideAnim, toggleUnitActions]);
 
   if (loading) return <ActivityIndicator style={{ flex: 1 }} color={BLUE} />;
 
@@ -1064,6 +1078,8 @@ const s = StyleSheet.create({
   badgeText: { fontSize: 12, fontWeight: '600' },
   unitActions: { flexDirection: 'row', gap: 4 },
   iconBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#F5F7FA', alignItems: 'center', justifyContent: 'center' },
+  iconBtnActive: { backgroundColor: '#EBF4FF' },
+  expandedActions: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   empty: { alignItems: 'center', paddingVertical: 40, gap: 12 },
   emptyText: { color: '#6B7280', textAlign: 'center', fontSize: 14 },
   modal: { flex: 1, backgroundColor: '#fff' },
