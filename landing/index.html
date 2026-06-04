@@ -541,7 +541,7 @@
       </div>
     </div>
 
-    <!-- Phone 2: Inspection (CENTER) -->
+    <!-- Phone 2: Units overview (CENTER) -->
     <div class="phone center">
       <div class="phone-inner" style="height:520px;">
         <div class="phone-notch"><div class="phone-notch-pill"></div></div>
@@ -550,48 +550,97 @@
             <div class="screen-logo-wrap"><img src="../assets/transperant-icon2-cropped.png" /></div>
           </div>
           <div class="screen-body">
-            <div class="insp-banner">
-              <div class="insp-type-s">Innflyttingsrapport</div>
-              <div class="insp-title-s">Kirkeveien 45 · 2A</div>
-              <div class="insp-status-s">Under utfylling · 4 av 5 rom</div>
-            </div>
-            <div class="s-title">Tilstandsvurdering</div>
-            <div class="room-card-s">
-              <div class="room-row-s">
-                <div class="room-name-s"><ion-icon name="restaurant-outline"></ion-icon>Kjøkken</div>
-                <div class="cond cond-g">Bra</div>
+            <!-- Property header -->
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <ion-icon name="chevron-back-outline" style="font-size:13px;color:var(--blue);"></ion-icon>
+                <div>
+                  <div style="font-size:11px;font-weight:800;color:var(--dark);">Parkveien 12</div>
+                  <div style="font-size:8px;color:var(--gray);">0350 Oslo</div>
+                </div>
               </div>
-              <div class="room-note-s">Rent og pent. Ingen synlige skader.</div>
-            </div>
-            <div class="room-card-s">
-              <div class="room-row-s">
-                <div class="room-name-s"><ion-icon name="water-outline"></ion-icon>Bad</div>
-                <div class="cond cond-o">Ok</div>
-              </div>
-              <div class="room-note-s">Kalkflekker på kran. Dokumentert.</div>
-            </div>
-            <div class="room-card-s">
-              <div class="room-row-s">
-                <div class="room-name-s"><ion-icon name="layers-outline"></ion-icon>Gulv</div>
-                <div class="cond cond-g">Bra</div>
+              <div style="background:#F3F4F6;border-radius:7px;padding:4px 6px;">
+                <ion-icon name="settings-outline" style="font-size:11px;color:#6B7280;"></ion-icon>
               </div>
             </div>
-            <div class="room-card-s">
-              <div class="room-row-s">
-                <div class="room-name-s"><ion-icon name="square-outline"></ion-icon>Vegger</div>
-                <div class="cond cond-p">Dårlig</div>
-              </div>
-              <div class="room-note-s">Bulk i gang. Bilde lastet opp.</div>
+            <!-- Enheter header -->
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <div style="font-size:9.5px;font-weight:700;color:var(--dark);">Enheter (5)</div>
+              <div style="background:var(--blue);border-radius:7px;padding:3px 8px;font-size:8px;font-weight:700;color:#fff;">+ Enhet</div>
             </div>
-            <div class="room-card-s">
-              <div class="room-row-s">
-                <div class="room-name-s"><ion-icon name="ellipsis-horizontal-outline"></ion-icon>Annet</div>
-                <div class="cond cond-g">Bra</div>
+            <!-- Unit cards -->
+            <div style="display:flex;flex-direction:column;gap:6px;">
+
+              <div style="background:#fff;border-radius:10px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 1px 3px rgba(0,0,0,0.07);">
+                <div>
+                  <div style="font-size:9.5px;font-weight:700;color:var(--dark);">Leilighet 1A</div>
+                  <div style="font-size:8px;color:var(--blue);font-weight:600;">12 500 kr/mnd</div>
+                </div>
+                <div style="display:flex;gap:5px;">
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="document-text-outline" style="font-size:9px;color:#7C3AED;"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="wallet-outline" style="font-size:9px;color:var(--green);"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="clipboard-outline" style="font-size:9px;color:var(--amber);"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="mail-outline" style="font-size:9px;color:var(--blue);"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="settings-outline" style="font-size:9px;color:#9CA3AF;"></ion-icon></div>
+                </div>
               </div>
-            </div>
-            <div class="send-row-s">
-              <ion-icon name="send-outline"></ion-icon>
-              Send til leietaker for signering
+
+              <div style="background:#fff;border-radius:10px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 1px 3px rgba(0,0,0,0.07);">
+                <div>
+                  <div style="font-size:9.5px;font-weight:700;color:var(--dark);">Leilighet 1B</div>
+                  <div style="font-size:8px;color:var(--blue);font-weight:600;">10 000 kr/mnd</div>
+                </div>
+                <div style="display:flex;gap:5px;">
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="document-text-outline" style="font-size:9px;color:#7C3AED;"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="wallet-outline" style="font-size:9px;color:var(--green);"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="clipboard-outline" style="font-size:9px;color:var(--amber);"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="mail-outline" style="font-size:9px;color:var(--blue);"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="settings-outline" style="font-size:9px;color:#9CA3AF;"></ion-icon></div>
+                </div>
+              </div>
+
+              <div style="background:#fff;border-radius:10px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 1px 3px rgba(0,0,0,0.07);">
+                <div>
+                  <div style="font-size:9.5px;font-weight:700;color:var(--dark);">Leilighet 2A</div>
+                  <div style="font-size:8px;color:var(--blue);font-weight:600;">13 000 kr/mnd</div>
+                </div>
+                <div style="display:flex;gap:5px;">
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="document-text-outline" style="font-size:9px;color:#7C3AED;"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="wallet-outline" style="font-size:9px;color:var(--green);"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="clipboard-outline" style="font-size:9px;color:var(--amber);"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="mail-outline" style="font-size:9px;color:var(--blue);"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="settings-outline" style="font-size:9px;color:#9CA3AF;"></ion-icon></div>
+                </div>
+              </div>
+
+              <div style="background:#fff;border-radius:10px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 1px 3px rgba(0,0,0,0.07);">
+                <div>
+                  <div style="font-size:9.5px;font-weight:700;color:var(--dark);">Leilighet 2B</div>
+                  <div style="font-size:8px;color:var(--blue);font-weight:600;">9 500 kr/mnd</div>
+                </div>
+                <div style="display:flex;gap:5px;">
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="document-text-outline" style="font-size:9px;color:#7C3AED;"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="wallet-outline" style="font-size:9px;color:var(--green);"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="clipboard-outline" style="font-size:9px;color:var(--amber);"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="mail-outline" style="font-size:9px;color:var(--blue);"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="settings-outline" style="font-size:9px;color:#9CA3AF;"></ion-icon></div>
+                </div>
+              </div>
+
+              <div style="background:#fff;border-radius:10px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 1px 3px rgba(0,0,0,0.07);">
+                <div>
+                  <div style="font-size:9.5px;font-weight:700;color:var(--dark);">Leilighet 3A</div>
+                  <div style="font-size:8px;color:var(--blue);font-weight:600;">11 000 kr/mnd</div>
+                </div>
+                <div style="display:flex;gap:5px;">
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="document-text-outline" style="font-size:9px;color:#7C3AED;"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="wallet-outline" style="font-size:9px;color:var(--green);"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="clipboard-outline" style="font-size:9px;color:var(--amber);"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="mail-outline" style="font-size:9px;color:var(--blue);"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="settings-outline" style="font-size:9px;color:#9CA3AF;"></ion-icon></div>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
@@ -999,6 +1048,7 @@
 
   </div>
 </section>
+
 
 <!-- CTA -->
 <section class="cta-section" id="cta">
