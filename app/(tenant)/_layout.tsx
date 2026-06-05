@@ -1,7 +1,7 @@
 import { Image, View, useWindowDimensions } from 'react-native';
 import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { HomeIcon, WrenchIcon, ChatIcon, DocumentIcon, UserIcon, ClipboardIcon } from '@/components/Icon';
+import { HomeIcon, WrenchIcon, ChatIcon, UserIcon } from '@/components/Icon';
 
 const LogoBg = () => (
   <View style={{ flex: 1, backgroundColor: '#F5F7FA', alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 2 }}>
@@ -43,46 +43,23 @@ export default function TenantLayout() {
     >
       <Tabs.Screen
         name="index"
-        options={{
-          title: 'Hjem',
-          tabBarIcon: ({ focused }) => <HomeIcon color={focused ? BLUE : GRAY} />,
-        }}
+        options={{ title: 'Hjem', tabBarIcon: ({ focused }) => <HomeIcon color={focused ? BLUE : GRAY} /> }}
       />
       <Tabs.Screen
         name="issues"
-        options={{
-          title: 'Feil',
-          tabBarIcon: ({ focused }) => <WrenchIcon color={focused ? BLUE : GRAY} />,
-        }}
+        options={{ title: 'Feil', tabBarIcon: ({ focused }) => <WrenchIcon color={focused ? BLUE : GRAY} /> }}
       />
       <Tabs.Screen
         name="messages"
-        options={{
-          title: 'Meldinger',
-          tabBarIcon: ({ focused }) => <ChatIcon color={focused ? BLUE : GRAY} />,
-        }}
-      />
-      <Tabs.Screen
-        name="documents"
-        options={{
-          title: 'Dokumenter',
-          tabBarIcon: ({ focused }) => <DocumentIcon color={focused ? BLUE : GRAY} />,
-        }}
-      />
-      <Tabs.Screen
-        name="inspections"
-        options={{
-          title: 'Rapporter',
-          tabBarIcon: ({ focused }) => <ClipboardIcon color={focused ? BLUE : GRAY} />,
-        }}
+        options={{ title: 'Meldinger', tabBarIcon: ({ focused }) => <ChatIcon color={focused ? BLUE : GRAY} /> }}
       />
       <Tabs.Screen
         name="profile"
-        options={{
-          title: 'Profil',
-          tabBarIcon: ({ focused }) => <UserIcon color={focused ? BLUE : GRAY} />,
-        }}
+        options={{ title: 'Profil', tabBarIcon: ({ focused }) => <UserIcon color={focused ? BLUE : GRAY} /> }}
       />
+      {/* Skjult fra tab bar — nås via hjemskjerm */}
+      <Tabs.Screen name="documents"   options={{ href: null }} />
+      <Tabs.Screen name="inspections" options={{ href: null }} />
     </Tabs>
   );
 }
