@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import {
-  View, Text, Modal, TouchableOpacity, StyleSheet,
-  Alert, ActivityIndicator, ScrollView, Image,
+  View, Text, Modal, TouchableOpacity, TouchableWithoutFeedback,
+  StyleSheet, Alert, ActivityIndicator, ScrollView, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -15,10 +15,10 @@ import { useAuthStore } from '@/stores/authStore';
 const BLUE = '#1A56A0';
 
 const DOC_CATEGORIES: { key: DocumentCategory; label: string; icon: string; color: string }[] = [
-  { key: 'contract',  label: 'Kontrakt',   icon: 'document-text-outline', color: '#1A56A0' },
-  { key: 'rules',     label: 'Husregler',  icon: 'list-outline',           color: '#7C3AED' },
-  { key: 'receipt',   label: 'Kvittering', icon: 'receipt-outline',        color: '#10B981' },
-  { key: 'other',     label: 'Annet',      icon: 'attach-outline',         color: '#6B7280' },
+  { key: 'contract', label: 'Kontrakt',   icon: 'document-text-outline', color: '#1A56A0' },
+  { key: 'rules',    label: 'Husregler',  icon: 'list-outline',           color: '#7C3AED' },
+  { key: 'receipt',  label: 'Kvittering', icon: 'receipt-outline',        color: '#10B981' },
+  { key: 'other',    label: 'Annet',      icon: 'attach-outline',         color: '#6B7280' },
 ];
 
 function isImage(name: string) {
@@ -34,13 +34,12 @@ interface Props {
 
 export function DocsModal({ visible, onClose, unitId, unitNumber }: Props) {
   const { user } = useAuthStore();
-  const [docs, setDocs]               = useState<DocumentRow[]>([]);
-  const [loading, setLoading]         = useState(false);
-  const [uploading, setUploading]     = useState(false);
+  const [docs, setDocs]           = useState<DocumentRow[]>([]);
+  const [loading, setLoading]     = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [showCatPicker, setShowCatPicker] = useState(false);
-  const [previewUrl, setPreviewUrl]   = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  // Load docs when modal opens
   const fetchDocs = useCallback(async () => {
     setLoading(true);
     const { data } = await supabase
@@ -51,11 +50,8 @@ export function DocsModal({ visible, onClose, unitId, unitNumber }: Props) {
     setLoading(false);
   }, [unitId]);
 
-  const handleOpen = useCallback(() => {
-    fetchDocs();
-  }, [fetchDocs]);
+  // ── Upload ──────────────────────────────────────────────────────────────────
 
-  // ── Upload helpers ──────────────────────────────────────────────────────────
   const upload = async (uri: string, name: string, mimeType: string, category: DocumentCategory) => {
     setUploading(true);
     try {
@@ -72,16 +68,6 @@ export function DocsModal({ visible, onClose, unitId, unitNumber }: Props) {
     } finally {
       setUploading(false);
     }
-  };
-
-  const pickSource = (category: DocumentCategory) => {
-    setShowCatPicker(false);
-    Alert.alert('Velg fil', 'Hvor vil du hente filen fra?', [
-      { text: 'Ta bilde med kamera', onPress: () => takePhoto(category) },
-      { text: 'Velg fra bildebibliotek', onPress: () => pickImage(category) },
-      { text: 'Velg fil (PDF, Word, Excel)', onPress: () => pickDoc(category) },
-      { text: 'Avbryt', style: 'cancel' },
-    ]);
   };
 
   const pickDoc = async (category: DocumentCategory) => {
@@ -124,7 +110,19 @@ export function DocsModal({ visible, onClose, unitId, unitNumber }: Props) {
     await upload(a.uri, `foto_${Date.now()}.${ext}`, a.mimeType ?? 'image/jpeg', category);
   };
 
+  // Category selected → show source picker via Alert (works inside modal)
+  const onCategorySelected = (category: DocumentCategory) => {
+    setShowCatPicker(false);
+    Alert.alert('Velg fil', 'Hvor vil du hente filen fra?', [
+      { text: 'Ta bilde med kamera',       onPress: () => takePhoto(category) },
+      { text: 'Velg fra bildebibliotek',   onPress: () => pickImage(category) },
+      { text: 'Velg fil (PDF, Word, Excel)', onPress: () => pickDoc(category) },
+      { text: 'Avbryt', style: 'cancel' },
+    ]);
+  };
+
   // ── Doc actions ─────────────────────────────────────────────────────────────
+
   const openDoc = async (doc: DocumentRow) => {
     const { data, error } = await supabase.storage
       .from('documents').createSignedUrl(doc.storage_path, 60);
@@ -147,105 +145,135 @@ export function DocsModal({ visible, onClose, unitId, unitNumber }: Props) {
     ]);
   };
 
+  // ── Render ──────────────────────────────────────────────────────────────────
+
   return (
-    <>
-      <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onShow={handleOpen}>
-        <SafeAreaView style={s.safe}>
-          {/* Header */}
-          <View style={s.header}>
-            <TouchableOpacity onPress={onClose}><Text style={s.cancel}>Lukk</Text></TouchableOpacity>
-            <Text style={s.title}>Dokumenter – {unitNumber}</Text>
-            <TouchableOpacity onPress={() => setShowCatPicker(true)} disabled={uploading}>
-              {uploading
-                ? <ActivityIndicator color={BLUE} size="small" />
-                : <Text style={s.uploadBtn}>+ Last opp</Text>}
-            </TouchableOpacity>
-          </View>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="pageSheet"
+      onShow={fetchDocs}
+    >
+      {/* Outer container — fills the sheet */}
+      <SafeAreaView style={s.safe}>
 
-          {/* Doc list */}
-          {loading ? (
-            <ActivityIndicator style={{ marginTop: 40 }} color={BLUE} />
-          ) : docs.length === 0 ? (
-            <View style={s.empty}>
-              <Ionicons name="document-outline" size={48} color="#D1D5DB" />
-              <Text style={s.emptyText}>Ingen dokumenter lastet opp ennå.</Text>
-            </View>
-          ) : (
-            <ScrollView contentContainerStyle={s.list}>
-              {docs.map(doc => {
-                const cat = DOC_CATEGORIES.find(c => c.key === doc.category) ?? DOC_CATEGORIES[3];
-                return (
-                  <TouchableOpacity key={doc.id} style={s.docRow} onPress={() => openDoc(doc)}>
-                    <View style={[s.docIcon, { backgroundColor: cat.color + '18' }]}>
-                      <Ionicons name={(isImage(doc.name) ? 'image-outline' : cat.icon) as any} size={20} color={cat.color} />
-                    </View>
-                    <View style={s.docInfo}>
-                      <Text style={s.docName} numberOfLines={1}>{doc.name}</Text>
-                      <Text style={s.docMeta}>{cat.label}</Text>
-                    </View>
-                    <TouchableOpacity onPress={() => deleteDoc(doc)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                      <Ionicons name="trash-outline" size={18} color="#EF4444" />
-                    </TouchableOpacity>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          )}
-        </SafeAreaView>
-      </Modal>
-
-      {/* Category picker */}
-      <Modal visible={showCatPicker} transparent animationType="slide">
-        <TouchableOpacity style={s.backdrop} activeOpacity={1} onPress={() => setShowCatPicker(false)}>
-          <View style={s.sheet}>
-            <View style={s.handle} />
-            <Text style={s.sheetTitle}>Velg kategori</Text>
-            {DOC_CATEGORIES.map(cat => (
-              <TouchableOpacity key={cat.key} style={s.catRow} onPress={() => pickSource(cat.key)}>
-                <View style={[s.catIcon, { backgroundColor: cat.color + '18' }]}>
-                  <Ionicons name={cat.icon as any} size={22} color={cat.color} />
-                </View>
-                <Text style={s.catLabel}>{cat.label}</Text>
-                <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
-              </TouchableOpacity>
-            ))}
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      {/* Image preview */}
-      {previewUrl && (
-        <Modal visible transparent animationType="fade">
-          <TouchableOpacity style={s.overlay} activeOpacity={1} onPress={() => setPreviewUrl(null)}>
-            <Image source={{ uri: previewUrl }} style={s.previewImg} resizeMode="contain" />
+        {/* Header */}
+        <View style={s.header}>
+          <TouchableOpacity onPress={onClose}>
+            <Text style={s.cancel}>Lukk</Text>
           </TouchableOpacity>
-        </Modal>
-      )}
-    </>
+          <Text style={s.title}>Dokumenter – {unitNumber}</Text>
+          <TouchableOpacity
+            onPress={() => setShowCatPicker(true)}
+            disabled={uploading}
+          >
+            {uploading
+              ? <ActivityIndicator color={BLUE} size="small" />
+              : <Text style={s.uploadBtn}>+ Last opp</Text>}
+          </TouchableOpacity>
+        </View>
+
+        {/* Doc list */}
+        {loading ? (
+          <ActivityIndicator style={{ marginTop: 40 }} color={BLUE} />
+        ) : docs.length === 0 ? (
+          <View style={s.empty}>
+            <Ionicons name="document-outline" size={48} color="#D1D5DB" />
+            <Text style={s.emptyText}>Ingen dokumenter lastet opp ennå.</Text>
+          </View>
+        ) : (
+          <ScrollView contentContainerStyle={s.list}>
+            {docs.map(doc => {
+              const cat = DOC_CATEGORIES.find(c => c.key === doc.category) ?? DOC_CATEGORIES[3];
+              return (
+                <TouchableOpacity key={doc.id} style={s.docRow} onPress={() => openDoc(doc)}>
+                  <View style={[s.docIcon, { backgroundColor: cat.color + '18' }]}>
+                    <Ionicons name={(isImage(doc.name) ? 'image-outline' : cat.icon) as any} size={20} color={cat.color} />
+                  </View>
+                  <View style={s.docInfo}>
+                    <Text style={s.docName} numberOfLines={1}>{doc.name}</Text>
+                    <Text style={s.docMeta}>{cat.label}</Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => deleteDoc(doc)}
+                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                  >
+                    <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                  </TouchableOpacity>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        )}
+
+        {/* ── Category picker — absolute overlay INSIDE the sheet, no nested Modal ── */}
+        {showCatPicker && (
+          <TouchableWithoutFeedback onPress={() => setShowCatPicker(false)}>
+            <View style={s.catBackdrop}>
+              <TouchableWithoutFeedback>
+                <View style={s.catSheet}>
+                  <View style={s.handle} />
+                  <Text style={s.sheetTitle}>Velg kategori</Text>
+                  {DOC_CATEGORIES.map(cat => (
+                    <TouchableOpacity
+                      key={cat.key}
+                      style={s.catRow}
+                      onPress={() => onCategorySelected(cat.key)}
+                    >
+                      <View style={[s.catIcon, { backgroundColor: cat.color + '18' }]}>
+                        <Ionicons name={cat.icon as any} size={22} color={cat.color} />
+                      </View>
+                      <Text style={s.catLabel}>{cat.label}</Text>
+                      <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </TouchableWithoutFeedback>
+            </View>
+          </TouchableWithoutFeedback>
+        )}
+
+        {/* ── Image preview — absolute overlay INSIDE the sheet ── */}
+        {previewUrl && (
+          <TouchableOpacity
+            style={s.previewOverlay}
+            activeOpacity={1}
+            onPress={() => setPreviewUrl(null)}
+          >
+            <Image source={{ uri: previewUrl }} style={s.previewImg} resizeMode="contain" />
+            <Ionicons name="close-circle" size={36} color="#fff" style={s.closeIcon} />
+          </TouchableOpacity>
+        )}
+
+      </SafeAreaView>
+    </Modal>
   );
 }
 
 const s = StyleSheet.create({
-  safe:       { flex: 1, backgroundColor: '#fff' },
-  header:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
-  title:      { fontSize: 16, fontWeight: '600', color: '#1A1A2E' },
-  cancel:     { color: '#6B7280', fontSize: 16 },
-  uploadBtn:  { color: BLUE, fontSize: 16, fontWeight: '600' },
-  empty:      { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 40 },
-  emptyText:  { color: '#6B7280', fontSize: 14, textAlign: 'center' },
-  list:       { padding: 16, gap: 10 },
-  docRow:     { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#F9FAFB', borderRadius: 14, padding: 14 },
-  docIcon:    { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  docInfo:    { flex: 1 },
-  docName:    { fontSize: 14, fontWeight: '500', color: '#1A1A2E' },
-  docMeta:    { fontSize: 12, color: '#6B7280', marginTop: 2 },
-  backdrop:   { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  sheet:      { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 40, gap: 10 },
-  handle:     { width: 40, height: 4, backgroundColor: '#E5E7EB', borderRadius: 2, alignSelf: 'center', marginBottom: 4 },
-  sheetTitle: { fontSize: 17, fontWeight: '700', color: '#1A1A2E', marginBottom: 4 },
-  catRow:     { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#F9FAFB', borderRadius: 14, padding: 14 },
-  catIcon:    { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  catLabel:   { flex: 1, fontSize: 15, fontWeight: '500', color: '#1A1A2E' },
-  overlay:    { flex: 1, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center' },
-  previewImg: { width: '100%', height: '80%' },
+  safe:         { flex: 1, backgroundColor: '#fff' },
+  header:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
+  title:        { fontSize: 16, fontWeight: '600', color: '#1A1A2E' },
+  cancel:       { color: '#6B7280', fontSize: 16 },
+  uploadBtn:    { color: BLUE, fontSize: 16, fontWeight: '600' },
+  empty:        { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 40 },
+  emptyText:    { color: '#6B7280', fontSize: 14, textAlign: 'center' },
+  list:         { padding: 16, gap: 10 },
+  docRow:       { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#F9FAFB', borderRadius: 14, padding: 14 },
+  docIcon:      { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  docInfo:      { flex: 1 },
+  docName:      { fontSize: 14, fontWeight: '500', color: '#1A1A2E' },
+  docMeta:      { fontSize: 12, color: '#6B7280', marginTop: 2 },
+  // Category picker overlay (no nested Modal)
+  catBackdrop:  { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  catSheet:     { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 40, gap: 10 },
+  handle:       { width: 40, height: 4, backgroundColor: '#E5E7EB', borderRadius: 2, alignSelf: 'center', marginBottom: 4 },
+  sheetTitle:   { fontSize: 17, fontWeight: '700', color: '#1A1A2E', marginBottom: 4 },
+  catRow:       { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#F9FAFB', borderRadius: 14, padding: 14 },
+  catIcon:      { width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  catLabel:     { flex: 1, fontSize: 15, fontWeight: '500', color: '#1A1A2E' },
+  // Image preview overlay
+  previewOverlay: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.92)', alignItems: 'center', justifyContent: 'center' },
+  previewImg:   { width: '100%', height: '80%' },
+  closeIcon:    { position: 'absolute', top: 20, right: 20 },
 });
