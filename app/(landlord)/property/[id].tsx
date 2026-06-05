@@ -5,6 +5,7 @@ import * as Clipboard from 'expo-clipboard';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { DocsModal } from '@/components/DocsModal';
+import { ExpensesModal } from '@/components/ExpensesModal';
 import { UnitDetailSheet, UnitSheetData } from '@/components/UnitDetailSheet';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -96,14 +97,15 @@ export default function PropertyDetailScreen() {
   const [historyUnit, setHistoryUnit] = useState<UnitWithInvite | null>(null);
   const [endingLease, setEndingLease] = useState(false);
 
-  // Documents — handled by DocsModal component
+  // Documents
   const [showDocsModal, setShowDocsModal] = useState(false);
-  const [docsUnit, setDocsUnit] = useState<UnitWithInvite | null>(null);
+  const [docsUnitId, setDocsUnitId]       = useState('');
+  const [docsUnitNum, setDocsUnitNum]     = useState('');
 
-  const openDocs = (unit: UnitWithInvite) => {
-    setDocsUnit(unit);
-    setShowDocsModal(true);
-  };
+  // Expenses
+  const [showExpensesModal2, setShowExpensesModal2] = useState(false);
+  const [expUnitId, setExpUnitId]   = useState('');
+  const [expUnitNum, setExpUnitNum] = useState('');
 
   // Expenses
   const [showExpensesModal, setShowExpensesModal] = useState(false);
@@ -507,6 +509,24 @@ export default function PropertyDetailScreen() {
         unit={selectedUnit}
         onClose={() => setSelectedUnit(null)}
         onRefresh={fetchData}
+        onOpenDocs={(id, num) => { setDocsUnitId(id); setDocsUnitNum(num); setShowDocsModal(true); }}
+        onOpenExpenses={(id, num) => { setExpUnitId(id); setExpUnitNum(num); setShowExpensesModal2(true); }}
+      />
+
+      {/* Docs modal */}
+      <DocsModal
+        visible={showDocsModal}
+        onClose={() => setShowDocsModal(false)}
+        unitId={docsUnitId}
+        unitNumber={docsUnitNum}
+      />
+
+      {/* Expenses modal */}
+      <ExpensesModal
+        visible={showExpensesModal2}
+        onClose={() => setShowExpensesModal2(false)}
+        unitId={expUnitId}
+        unitNumber={expUnitNum}
       />
 
       {/* Unit Settings Modal */}

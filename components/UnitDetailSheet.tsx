@@ -1,13 +1,8 @@
-import { useState } from 'react';
-import {
-  View, Text, Modal, TouchableOpacity, StyleSheet,
-  Alert, ScrollView, ActivityIndicator,
-} from 'react-native';
+import { View, Text, Modal, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
-import { DocsModal } from './DocsModal';
 
 const BLUE = '#1A56A0';
 
@@ -30,11 +25,12 @@ interface Props {
   unit: UnitSheetData | null;
   onClose: () => void;
   onRefresh: () => void;
+  onOpenDocs: (unitId: string, unitNumber: string) => void;
+  onOpenExpenses: (unitId: string, unitNumber: string) => void;
 }
 
-export function UnitDetailSheet({ unit, onClose, onRefresh }: Props) {
+export function UnitDetailSheet({ unit, onClose, onRefresh, onOpenDocs, onOpenExpenses }: Props) {
   const router = useRouter();
-  const [showDocs, setShowDocs] = useState(false);
 
   if (!unit) return null;
 
@@ -167,11 +163,12 @@ export function UnitDetailSheet({ unit, onClose, onRefresh }: Props) {
             {/* Handlinger */}
             <Text style={s.actionsLabel}>Handlinger</Text>
             <View style={s.actionsGrid}>
-              <ActionBtn icon="document-text-outline" label="Dokumenter" color="#7C3AED" onPress={() => setShowDocs(true)} />
+              <ActionBtn icon="document-text-outline" label="Dokumenter" color="#7C3AED"
+                onPress={() => { onClose(); setTimeout(() => onOpenDocs(unit.id, unit.unit_number), 350); }} />
               <ActionBtn icon="wallet-outline" label="Utgifter" color="#10B981"
-                onPress={() => { onClose(); router.push({ pathname: '/(landlord)/expenses', params: { unit_id: unit.id, unit_number: unit.unit_number } } as any); }} />
+                onPress={() => { onClose(); setTimeout(() => onOpenExpenses(unit.id, unit.unit_number), 350); }} />
               <ActionBtn icon="clipboard-outline" label="Rapport" color="#F59E0B"
-                onPress={() => { onClose(); router.push({ pathname: '/(landlord)/inspection', params: { unit_id: unit.id, unit_number: unit.unit_number } } as any); }} />
+                onPress={() => { onClose(); setTimeout(() => router.push({ pathname: '/(landlord)/inspection', params: { unit_id: unit.id, unit_number: unit.unit_number } } as any), 350); }} />
               {!hasActiveTenant && (
                 <ActionBtn icon="mail-outline" label="Inviter" color={BLUE} onPress={sendInvite} />
               )}
@@ -189,15 +186,6 @@ export function UnitDetailSheet({ unit, onClose, onRefresh }: Props) {
         </SafeAreaView>
       </Modal>
 
-      {/* Docs — separate modal, not nested */}
-      {showDocs && (
-        <DocsModal
-          visible={showDocs}
-          onClose={() => setShowDocs(false)}
-          unitId={unit.id}
-          unitNumber={unit.unit_number}
-        />
-      )}
     </>
   );
 }
