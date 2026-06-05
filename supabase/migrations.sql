@@ -255,7 +255,18 @@ ALTER TABLE public.documents ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
   CREATE POLICY "Tilgang til dokumenter i sin enhet" ON public.documents
-    FOR ALL USING (
+    FOR ALL
+    USING (
+      EXISTS (
+        SELECT 1 FROM public.units u
+        WHERE u.id = unit_id
+        AND (u.tenant_id = auth.uid() OR EXISTS (
+          SELECT 1 FROM public.properties p
+          WHERE p.id = u.property_id AND p.landlord_id = auth.uid()
+        ))
+      )
+    )
+    WITH CHECK (
       EXISTS (
         SELECT 1 FROM public.units u
         WHERE u.id = unit_id
