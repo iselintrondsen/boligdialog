@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 import { supabase } from '@/lib/supabase';
 import { Ionicons } from '@expo/vector-icons';
@@ -30,86 +30,63 @@ export default function TenantHomeScreen() {
   const [lease, setLease]               = useState<LeaseInfo | null>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading]           = useState(true);
-  const [refreshKey, setRefreshKey]     = useState(0);
 
   const handleEnterCode = () => {
     Alert.prompt(
       'Skriv inn invitasjonskode',
       'Du finner koden hos utleier (6 siffer):',
-      async (code: string) => {
+      (code: string) => {
         if (!code?.trim()) return;
-        const { data: inv } = await supabase
-          .from('invitations')
-          .select('id, unit_id, status')
-          .eq('token', code.trim())
-          .eq('status', 'pending')
-          .gt('expires_at', new Date().toISOString())
-          .maybeSingle();
-
-        if (!inv) {
-          Alert.alert('Ugyldig kode', 'Koden finnes ikke eller er utløpt. Sjekk med utleier.'); return;
-        }
-
-        // Koble leietaker til enheten
-        const { error: unitErr } = await supabase
-          .from('units').update({ tenant_id: user!.id }).eq('id', inv.unit_id);
-        if (unitErr) { Alert.alert('Feil', unitErr.message); return; }
-
-        // Opprett lease-post
-        await supabase.from('leases').insert({
-          unit_id: inv.unit_id,
-          tenant_id: user!.id,
-          started_at: new Date().toISOString().split('T')[0],
-          ended_at: null,
-        });
-
-        // Marker invitasjon som akseptert
-        await supabase.from('invitations').update({ status: 'accepted' }).eq('id', inv.id);
-
-        Alert.alert('Koblet!', 'Du er nå koblet til utleieren din.', [{ text: 'OK' }]);
-        setRefreshKey(k => k + 1);
+        router.push(`/invite/${code.trim()}` as any);
       },
       'plain-text'
     );
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!user) return;
-      const { data } = await supabase
-        .from('units')
-        .select(`
-          unit_number, monthly_rent,
-          properties ( id, address, city, postal_code, users ( full_name ) )
-        `)
-        .eq('tenant_id', user.id)
-        .maybeSingle() as any;
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      const fetchData = async () => {
+        if (!user) return;
+        const { data } = await supabase
+          .from('units')
+          .select(`
+            unit_number, monthly_rent,
+            properties ( id, address, city, postal_code, users ( full_name ) )
+          `)
+          .eq('tenant_id', user.id)
+          .maybeSingle() as any;
 
-      if (data) {
-        const prop = data.properties;
-        setLease({
-          address: prop.address,
-          city: prop.city,
-          postal_code: prop.postal_code,
-          unit_number: data.unit_number,
-          monthly_rent: data.monthly_rent,
-          landlord_name: prop.users?.full_name ?? 'Utleier',
-          property_id: prop.id,
-        });
+        if (!active) return;
 
-        // Hent alle varsler — nyeste øverst
-        const { data: anns } = await supabase
-          .from('announcements')
-          .select('id, content, created_at')
-          .eq('property_id', prop.id)
-          .order('created_at', { ascending: false })
-          .limit(5);
-        if (anns) setAnnouncements(anns as Announcement[]);
-      }
-      setLoading(false);
-    };
-    fetchData();
-  }, [user, refreshKey]);
+        if (data) {
+          const prop = data.properties;
+          setLease({
+            address: prop.address,
+            city: prop.city,
+            postal_code: prop.postal_code,
+            unit_number: data.unit_number,
+            monthly_rent: data.monthly_rent,
+            landlord_name: prop.users?.full_name ?? 'Utleier',
+            property_id: prop.id,
+          });
+
+          const { data: anns } = await supabase
+            .from('announcements')
+            .select('id, content, created_at')
+            .eq('property_id', prop.id)
+            .order('created_at', { ascending: false })
+            .limit(5);
+          if (active && anns) setAnnouncements(anns as Announcement[]);
+        } else {
+          setLease(null);
+        }
+        if (active) setLoading(false);
+      };
+      fetchData();
+      return () => { active = false; };
+    }, [user])
+  );
 
   return (
     <SafeAreaView style={s.safe} edges={['bottom']}>
