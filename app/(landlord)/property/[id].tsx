@@ -5,6 +5,7 @@ import * as Clipboard from 'expo-clipboard';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { DocsModal } from '@/components/DocsModal';
+import { UnitDetailSheet, UnitSheetData } from '@/components/UnitDetailSheet';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -68,7 +69,7 @@ export default function PropertyDetailScreen() {
   const [unitForm, setUnitForm] = useState({ unit_number: '', floor: '', size_sqm: '', monthly_rent: '' });
 
   const [showInviteModal, setShowInviteModal] = useState(false);
-  const [selectedUnit, setSelectedUnit] = useState<UnitWithInvite | null>(null);
+  const [inviteUnit, setInviteUnit] = useState<UnitWithInvite | null>(null);
   const [inviteEmail, setInviteEmail] = useState('');
   const [sendingInvite, setSendingInvite] = useState(false);
 
@@ -87,20 +88,9 @@ export default function PropertyDetailScreen() {
 
   // Leases
   const [leases, setLeases] = useState<LeaseWithTenant[]>([]);
-  const [expandedUnitId, setExpandedUnitId] = useState<string | null>(null);
-  const slideAnim = useRef(new Animated.Value(0)).current;
 
-  const toggleUnitActions = useCallback((unitId: string) => {
-    if (expandedUnitId === unitId) {
-      Animated.timing(slideAnim, { toValue: 0, duration: 180, useNativeDriver: true }).start(() => {
-        setExpandedUnitId(null);
-      });
-    } else {
-      setExpandedUnitId(unitId);
-      slideAnim.setValue(0);
-      Animated.timing(slideAnim, { toValue: 1, duration: 220, useNativeDriver: true }).start();
-    }
-  }, [expandedUnitId, slideAnim]);
+  // Unit detail sheet
+  const [selectedUnit, setSelectedUnit] = useState<UnitSheetData | null>(null);
 
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [historyUnit, setHistoryUnit] = useState<UnitWithInvite | null>(null);
@@ -279,11 +269,11 @@ export default function PropertyDetailScreen() {
 
   const handleSendInvite = async () => {
     if (!inviteEmail.trim() || !inviteEmail.includes('@')) { Alert.alert('Feil', 'Skriv inn en gyldig e-postadresse.'); return; }
-    if (!selectedUnit) return;
+    if (!inviteUnit) return;
     setSendingInvite(true);
     const token = Math.random().toString(36).substring(2) + Date.now().toString(36);
     const { error } = await supabase.from('invitations').insert({
-      unit_id: selectedUnit.id, landlord_id: user!.id,
+      unit_id: inviteUnit.id, landlord_id: user!.id,
       email: inviteEmail.trim().toLowerCase(), token, status: 'pending',
       expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     });
@@ -294,7 +284,7 @@ export default function PropertyDetailScreen() {
     Alert.alert('Invitasjon opprettet!', `Lenken er kopiert til utklippstavlen:\n\n${link}`, [{ text: 'OK' }]);
     setShowInviteModal(false);
     setInviteEmail('');
-    setSelectedUnit(null);
+    setInviteUnit(null);
     fetchData();
   };
 
@@ -357,76 +347,43 @@ export default function PropertyDetailScreen() {
     return { pending: { label: 'Invitert', color: '#F59E0B' }, accepted: { label: 'Aktiv leietaker', color: '#10B981' }, expired: { label: 'Utløpt', color: '#EF4444' } }[status];
   };
 
-  const renderUnit = useCallback(({ item }: { item: UnitWithInvite }) => {
-    const st = statusLabel(item.invite_status);
+  const openUnitDetail = useCallback((item: UnitWithInvite) => {
     const activeLease = leases.find(l => l.unit_id === item.id && !l.ended_at);
-    const pastLeases = leases.filter(l => l.unit_id === item.id && l.ended_at);
-    const isExpanded = item.id === expandedUnitId;
+    const pastLeases  = leases.filter(l => l.unit_id === item.id && !!l.ended_at);
+    setSelectedUnit({
+      id: item.id,
+      unit_number: item.unit_number,
+      floor: item.floor,
+      size_sqm: item.size_sqm,
+      monthly_rent: item.monthly_rent,
+      tenant_id: item.tenant_id,
+      tenant_name: activeLease?.tenant_name,
+      tenant_email: activeLease?.tenant_email,
+      lease_started: activeLease?.started_at,
+      invite_status: item.invite_status,
+      has_past_leases: pastLeases.length > 0,
+    });
+  }, [leases]);
+
+  const renderUnit = useCallback(({ item }: { item: UnitWithInvite }) => {
+    const activeLease = leases.find(l => l.unit_id === item.id && !l.ended_at);
     return (
-      <View style={s.unitCard}>
-        <View style={s.unitRow}>
-          <View style={s.unitInfo}>
-            <Text style={s.unitNumber}>{item.unit_number}</Text>
-            {item.monthly_rent != null && <Text style={s.unitRent}>{Number(item.monthly_rent).toLocaleString('nb-NO')} kr/mnd</Text>}
-            {item.size_sqm != null && <Text style={s.unitDetail}>{item.size_sqm} m²{item.floor != null ? ` · Etasje ${item.floor}` : ''}</Text>}
-            {activeLease ? (
-              <View style={s.activeTenantRow}>
-                <Ionicons name="person-circle-outline" size={15} color="#10B981" />
-                <Text style={s.activeTenantName}>{activeLease.tenant_name}</Text>
-                <Text style={s.activeTenantSince}>· fra {fmtDate(activeLease.started_at)}</Text>
-              </View>
-            ) : st ? (
-              <View style={[s.badge, { backgroundColor: st.color + '22' }]}><Text style={[s.badgeText, { color: st.color }]}>{st.label}</Text></View>
-            ) : null}
-          </View>
-          <View style={s.unitActions}>
-            {isExpanded && (
-              <Animated.View style={[s.expandedActions, {
-                opacity: slideAnim,
-                transform: [{ translateX: slideAnim.interpolate({ inputRange: [0, 1], outputRange: [60, 0] }) }],
-              }]}>
-                <TouchableOpacity style={s.iconBtn} onPress={() => { toggleUnitActions(item.id); openDocs(item); }}>
-                  <Ionicons name="document-text-outline" size={22} color="#7C3AED" />
-                </TouchableOpacity>
-                <TouchableOpacity style={s.iconBtn} onPress={() => { toggleUnitActions(item.id); openExpenses(item); }}>
-                  <Ionicons name="wallet-outline" size={22} color="#10B981" />
-                </TouchableOpacity>
-                <TouchableOpacity style={s.iconBtn} onPress={() => { toggleUnitActions(item.id); router.push({ pathname: '/(landlord)/inspection', params: { unit_id: item.id, unit_number: item.unit_number } } as any); }}>
-                  <Ionicons name="clipboard-outline" size={22} color="#F59E0B" />
-                </TouchableOpacity>
-                {pastLeases.length > 0 && (
-                  <TouchableOpacity style={s.iconBtn} onPress={() => { toggleUnitActions(item.id); setHistoryUnit(item); setShowHistoryModal(true); }}>
-                    <Ionicons name="time-outline" size={22} color="#6B7280" />
-                  </TouchableOpacity>
-                )}
-                {!activeLease && (
-                  <TouchableOpacity style={s.iconBtn} onPress={() => { toggleUnitActions(item.id); setSelectedUnit(item); setShowInviteModal(true); }}>
-                    <Ionicons name="mail-outline" size={22} color={BLUE} />
-                  </TouchableOpacity>
-                )}
-                <TouchableOpacity style={s.iconBtn} onPress={() => {
-                  toggleUnitActions(item.id);
-                  setSettingsUnit(item);
-                  setUnitForm({
-                    unit_number: item.unit_number,
-                    floor: item.floor != null ? String(item.floor) : '',
-                    size_sqm: item.size_sqm != null ? String(item.size_sqm) : '',
-                    monthly_rent: item.monthly_rent != null ? String(item.monthly_rent) : '',
-                  });
-                  setShowUnitSettingsModal(true);
-                }}>
-                  <Ionicons name="settings-outline" size={22} color="#9CA3AF" />
-                </TouchableOpacity>
-              </Animated.View>
-            )}
-            <TouchableOpacity style={[s.iconBtn, isExpanded && s.iconBtnActive]} onPress={() => toggleUnitActions(item.id)}>
-              <Ionicons name={isExpanded ? 'close-outline' : 'ellipsis-horizontal'} size={22} color={isExpanded ? BLUE : '#9CA3AF'} />
-            </TouchableOpacity>
-          </View>
+      <TouchableOpacity style={s.unitRow} onPress={() => openUnitDetail(item)} activeOpacity={0.7}>
+        <Text style={s.unitNumber}>{item.unit_number}</Text>
+        <View style={s.unitRowRight}>
+          {activeLease ? (
+            <View style={s.tenantDot} />
+          ) : item.invite_status === 'pending' ? (
+            <View style={[s.tenantDot, { backgroundColor: '#F59E0B' }]} />
+          ) : null}
+          {item.monthly_rent != null
+            ? <Text style={s.unitRent}>{Number(item.monthly_rent).toLocaleString('nb-NO')} kr/mnd</Text>
+            : <Text style={s.unitRentEmpty}>Ingen pris</Text>}
+          <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
         </View>
-      </View>
+      </TouchableOpacity>
     );
-  }, [leases, units, expandedUnitId, slideAnim, toggleUnitActions]);
+  }, [leases, openUnitDetail]);
 
   if (loading) return <ActivityIndicator style={{ flex: 1 }} color={BLUE} />;
 
@@ -545,15 +502,12 @@ export default function PropertyDetailScreen() {
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* Documents — isolated component to prevent full-screen re-renders */}
-      {docsUnit && (
-        <DocsModal
-          visible={showDocsModal}
-          onClose={() => setShowDocsModal(false)}
-          unitId={docsUnit.id}
-          unitNumber={docsUnit.unit_number}
-        />
-      )}
+      {/* Unit detail sheet — opens when tapping a unit row */}
+      <UnitDetailSheet
+        unit={selectedUnit}
+        onClose={() => setSelectedUnit(null)}
+        onRefresh={fetchData}
+      />
 
       {/* Unit Settings Modal */}
       <Modal visible={showUnitSettingsModal} animationType="slide" presentationStyle="pageSheet">
@@ -849,7 +803,7 @@ export default function PropertyDetailScreen() {
               </TouchableOpacity>
             </View>
             <View style={s.modalBody}>
-              <Text style={s.inviteInfo}>Enhet: {selectedUnit?.unit_number}</Text>
+              <Text style={s.inviteInfo}>Enhet: {inviteUnit?.unit_number}</Text>
               <View style={s.field}>
                 <Text style={s.label}>Leietakers e-postadresse</Text>
                 <TextInput style={s.input} placeholder="leietaker@epost.no" placeholderTextColor="#9CA3AF"
@@ -889,10 +843,13 @@ const s = StyleSheet.create({
   addBtn: { backgroundColor: BLUE, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 },
   addBtnText: { color: '#fff', fontWeight: '600', fontSize: 14 },
   unitCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
-  unitRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
+  unitRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', borderRadius: 14, paddingHorizontal: 18, paddingVertical: 16, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, elevation: 1 },
+  unitRowRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   unitInfo: { flex: 1, gap: 4 },
-  unitNumber: { fontSize: 16, fontWeight: '600', color: '#1A1A2E' },
-  unitRent: { fontSize: 14, color: BLUE, fontWeight: '500' },
+  unitNumber: { fontSize: 17, fontWeight: '700', color: '#1A1A2E' },
+  unitRent: { fontSize: 14, color: '#6B7280', fontWeight: '500' },
+  unitRentEmpty: { fontSize: 14, color: '#C4C9D4', fontStyle: 'italic' },
+  tenantDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#10B981' },
   unitDetail: { fontSize: 13, color: '#6B7280' },
   badge: { alignSelf: 'flex-start', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
   badgeText: { fontSize: 12, fontWeight: '600' },

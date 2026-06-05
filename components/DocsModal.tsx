@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import {
   View, Text, Modal, TouchableOpacity, TouchableWithoutFeedback,
-  StyleSheet, Alert, ActivityIndicator, ScrollView, Image,
+  StyleSheet, Alert, ActivityIndicator, ScrollView, Image, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -125,12 +125,18 @@ export function DocsModal({ visible, onClose, unitId, unitNumber }: Props) {
 
   const openDoc = async (doc: DocumentRow) => {
     const { data, error } = await supabase.storage
-      .from('documents').createSignedUrl(doc.storage_path, 60);
+      .from('documents').createSignedUrl(doc.storage_path, 300);
     if (error || !data) { Alert.alert('Feil', 'Kunne ikke åpne filen.'); return; }
     if (isImage(doc.name)) {
       setPreviewUrl(data.signedUrl);
     } else {
-      Alert.alert(doc.name, `Kategori: ${DOC_CATEGORIES.find(c => c.key === doc.category)?.label ?? doc.category}`);
+      // Åpne i systemets innebygde visningsprogram (Safari/Files for PDF/Word)
+      const canOpen = await Linking.canOpenURL(data.signedUrl);
+      if (canOpen) {
+        await Linking.openURL(data.signedUrl);
+      } else {
+        Alert.alert('Kan ikke åpne', 'Installer en app som støtter denne filtypen.');
+      }
     }
   };
 
