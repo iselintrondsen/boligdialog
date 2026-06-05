@@ -84,7 +84,7 @@ export function UnitDetailSheet({ unit, onClose, onRefresh, onOpenDocs, onOpenEx
       'Skriv inn leietakers e-postadresse:',
       async (email) => {
         if (!email?.trim() || !email.includes('@')) return;
-        const token = Math.random().toString(36).substring(2) + Date.now().toString(36);
+        const token = String(Math.floor(100000 + Math.random() * 900000));
         const { data: { session } } = await supabase.auth.getSession();
         const { error } = await supabase.from('invitations').insert({
           unit_id: unit.id,
@@ -95,11 +95,10 @@ export function UnitDetailSheet({ unit, onClose, onRefresh, onOpenDocs, onOpenEx
           expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         });
         if (error) { Alert.alert('Feil', error.message); return; }
-        const link = `boligdialog://invite/${token}`;
-        await Clipboard.setStringAsync(link);
+        await Clipboard.setStringAsync(token);
         Alert.alert(
-          'Invitasjon opprettet!',
-          `Lenken er kopiert til utklippstavlen.\n\nDel den med leietaker via iMessage, WhatsApp eller e-post:\n\n${link}`,
+          'Invitasjonskode opprettet!',
+          `Gi leietaker denne 6-sifrede koden:\n\n${token}\n\nKoden er kopiert til utklippstavlen og er gyldig i 7 dager.`,
           [{ text: 'OK' }]
         );
         onRefresh();

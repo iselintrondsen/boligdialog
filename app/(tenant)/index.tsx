@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
@@ -30,6 +30,49 @@ export default function TenantHomeScreen() {
   const [lease, setLease]               = useState<LeaseInfo | null>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading]           = useState(true);
+
+  const handleEnterCode = () => {
+    Alert.prompt(
+      'Skriv inn invitasjonskode',
+      'Du finner koden hos utleier (6 siffer):',
+      async (code: string) => {
+        if (!code?.trim()) return;
+        const { data: inv } = await supabase
+          .from('invitations')
+          .select('id, unit_id, status')
+          .eq('token', code.trim())
+          .eq('status', 'pending')
+          .gt('expires_at', new Date().toISOString())
+          .maybeSingle();
+
+        if (!inv) {
+          Alert.alert('Ugyldig kode', 'Koden finnes ikke eller er utløpt. Sjekk med utleier.'); return;
+        }
+
+        // Koble leietaker til enheten
+        const { error: unitErr } = await supabase
+          .from('units').update({ tenant_id: user!.id }).eq('id', inv.unit_id);
+        if (unitErr) { Alert.alert('Feil', unitErr.message); return; }
+
+        // Opprett lease-post
+        await supabase.from('leases').insert({
+          unit_id: inv.unit_id,
+          tenant_id: user!.id,
+          started_at: new Date().toISOString().split('T')[0],
+          ended_at: null,
+        });
+
+        // Marker invitasjon som akseptert
+        await supabase.from('invitations').update({ status: 'accepted' }).eq('id', inv.id);
+
+        Alert.alert('Koblet!', 'Du er nå koblet til utleieren din.', [{ text: 'OK' }]);
+        // Last inn på nytt
+        setLoading(true);
+        setLease(null);
+      },
+      'plain-text'
+    );
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -116,9 +159,13 @@ export default function TenantHomeScreen() {
             </View>
           ) : (
             <View style={s.noLeaseBox}>
-              <Ionicons name="home-outline" size={28} color="#9CA3AF" />
+              <Ionicons name="home-outline" size={32} color="#9CA3AF" />
               <Text style={s.noLeaseText}>Ingen aktiv leiekontrakt</Text>
-              <Text style={s.noLeaseSub}>Be utleier om å sende en invitasjon.</Text>
+              <Text style={s.noLeaseSub}>Skriv inn koden du har fått fra utleier.</Text>
+              <TouchableOpacity style={s.connectBtn} onPress={handleEnterCode}>
+                <Ionicons name="keypad-outline" size={18} color="#fff" />
+                <Text style={s.connectBtnText}>Skriv inn kode</Text>
+              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -168,9 +215,11 @@ const s = StyleSheet.create({
   leaseRent:          { color: BLUE, fontWeight: '700', fontSize: 20, marginTop: 6 },
   landlordRow:        { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8 },
   landlordName:       { color: '#6B7280', fontSize: 13 },
-  noLeaseBox:         { alignItems: 'center', paddingVertical: 20, gap: 6 },
+  noLeaseBox:         { alignItems: 'center', paddingVertical: 20, gap: 8 },
   noLeaseText:        { color: '#6B7280', fontWeight: '500', fontSize: 15 },
   noLeaseSub:         { color: '#9CA3AF', fontSize: 13, textAlign: 'center' },
+  connectBtn:         { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: BLUE, borderRadius: 12, paddingHorizontal: 20, paddingVertical: 12, marginTop: 4 },
+  connectBtnText:     { color: '#fff', fontWeight: '600', fontSize: 15 },
   quickGrid:          { flexDirection: 'row', gap: 12, marginBottom: 4 },
   quickCard:          { flex: 1, backgroundColor: '#fff', borderRadius: 16, padding: 16, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, elevation: 2, gap: 6 },
   quickIcon:          { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
