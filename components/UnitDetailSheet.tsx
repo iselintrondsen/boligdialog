@@ -2,6 +2,7 @@ import { View, Text, Modal, TouchableOpacity, StyleSheet, Alert, ScrollView } fr
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import * as Clipboard from 'expo-clipboard';
 import { supabase } from '@/lib/supabase';
 
 const BLUE = '#1A56A0';
@@ -94,7 +95,13 @@ export function UnitDetailSheet({ unit, onClose, onRefresh, onOpenDocs, onOpenEx
           expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
         });
         if (error) { Alert.alert('Feil', error.message); return; }
-        Alert.alert('Invitasjon sendt!', `Invitasjon er sendt til ${email.trim()}`);
+        const link = `boligdialog://invite/${token}`;
+        await Clipboard.setStringAsync(link);
+        Alert.alert(
+          'Invitasjon opprettet!',
+          `Lenken er kopiert til utklippstavlen.\n\nDel den med leietaker via iMessage, WhatsApp eller e-post:\n\n${link}`,
+          [{ text: 'OK' }]
+        );
         onRefresh();
       },
       'plain-text'
