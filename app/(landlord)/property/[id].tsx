@@ -4,7 +4,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Clipboard from 'expo-clipboard';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system/legacy';
+import { uploadToStorage } from '@/lib/uploadFile';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -12,26 +12,6 @@ import { useAuthStore } from '@/stores/authStore';
 import { PropertyRow, UnitRow, ExpenseRow, ExpenseCategory, DocumentRow, DocumentCategory, LeaseRow } from '@/lib/types';
 import { Ionicons } from '@expo/vector-icons';
 
-function base64ToUint8Array(base64: string): Uint8Array {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-  const str = base64.replace(/=+$/, '');
-  const bytes: number[] = [];
-  for (let i = 0; i < str.length; i += 4) {
-    const e1 = chars.indexOf(str[i]);
-    const e2 = chars.indexOf(str[i + 1]);
-    const e3 = str[i + 2] ? chars.indexOf(str[i + 2]) : -1;
-    const e4 = str[i + 3] ? chars.indexOf(str[i + 3]) : -1;
-    bytes.push((e1 << 2) | (e2 >> 4));
-    if (e3 !== -1) bytes.push(((e2 & 15) << 4) | (e3 >> 2));
-    if (e4 !== -1) bytes.push(((e3 & 3) << 6) | e4);
-  }
-  return new Uint8Array(bytes);
-}
-
-async function uriToBytes(uri: string): Promise<Uint8Array> {
-  const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
-  return base64ToUint8Array(base64);
-}
 
 const DOC_CATEGORIES: { key: DocumentCategory; label: string; icon: string; color: string }[] = [
   { key: 'contract',  label: 'Kontrakt',   icon: 'document-text-outline', color: '#1A56A0' },
@@ -154,14 +134,13 @@ export default function PropertyDetailScreen() {
     if (!docsUnit) return;
     setUploadingDoc(true);
     try {
-      const bytes = await uriToBytes(doc.uri);
       const path = `${user!.id}/${docsUnit.id}/${Date.now()}_${doc.name}`;
-      const { error: upErr } = await supabase.storage.from('documents').upload(path, bytes, { contentType: doc.mimeType });
+      const { error: upErr } = await uploadToStorage('documents', path, doc.uri, doc.mimeType);
       if (upErr) throw upErr;
       await supabase.from('documents').insert({
         unit_id: docsUnit.id, uploaded_by: user!.id,
         name: doc.name, category,
-        storage_path: path, file_size: bytes.length,
+        storage_path: path, file_size: 0,
       });
       await fetchDocs(docsUnit.id);
     } catch (e: any) {
@@ -497,7 +476,7 @@ export default function PropertyDetailScreen() {
       <View style={s.unitCard}>
         <View style={s.unitRow}>
           <View style={s.unitInfo}>
-            <Text style={s.unitNumber}>Enhet {item.unit_number}</Text>
+            <Text style={s.unitNumber}>{item.unit_number}</Text>
             {item.monthly_rent != null && <Text style={s.unitRent}>{Number(item.monthly_rent).toLocaleString('nb-NO')} kr/mnd</Text>}
             {item.size_sqm != null && <Text style={s.unitDetail}>{item.size_sqm} m²{item.floor != null ? ` · Etasje ${item.floor}` : ''}</Text>}
             {activeLease ? (

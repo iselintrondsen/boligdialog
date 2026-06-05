@@ -4,28 +4,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system/legacy';
 import { supabase } from '@/lib/supabase';
+import { uploadToStorage } from '@/lib/uploadFile';
 import { useAuthStore } from '@/stores/authStore';
 import { DocumentRow, DocumentCategory } from '@/lib/types';
 
 const BLUE = '#1A56A0';
-
-function base64ToUint8Array(base64: string): Uint8Array {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
-  const str = base64.replace(/=+$/, '');
-  const bytes: number[] = [];
-  for (let i = 0; i < str.length; i += 4) {
-    const e1 = chars.indexOf(str[i]);
-    const e2 = chars.indexOf(str[i + 1]);
-    const e3 = str[i + 2] ? chars.indexOf(str[i + 2]) : -1;
-    const e4 = str[i + 3] ? chars.indexOf(str[i + 3]) : -1;
-    bytes.push((e1 << 2) | (e2 >> 4));
-    if (e3 !== -1) bytes.push(((e2 & 15) << 4) | (e3 >> 2));
-    if (e4 !== -1) bytes.push(((e3 & 3) << 6) | e4);
-  }
-  return new Uint8Array(bytes);
-}
 
 const CATEGORIES: { key: DocumentCategory; label: string; icon: string; color: string }[] = [
   { key: 'contract',  label: 'Kontrakt',   icon: 'document-text-outline', color: '#1A56A0' },
@@ -66,15 +50,13 @@ export default function TenantDocumentsScreen() {
     if (!unitId) return;
     setUploading(true);
     try {
-      const base64 = await FileSystem.readAsStringAsync(file.uri, { encoding: FileSystem.EncodingType.Base64 });
-      const bytes = base64ToUint8Array(base64);
       const path = `${user!.id}/${unitId}/${Date.now()}_${file.name}`;
-      const { error: upErr } = await supabase.storage.from('documents').upload(path, bytes, { contentType: file.mimeType });
+      const { error: upErr } = await uploadToStorage('documents', path, file.uri, file.mimeType);
       if (upErr) throw upErr;
       const { error: dbErr } = await supabase.from('documents').insert({
         unit_id: unitId, uploaded_by: user!.id,
         name: file.name, category,
-        storage_path: path, file_size: bytes.length,
+        storage_path: path, file_size: 0,
       });
       if (dbErr) throw dbErr;
       await fetchDocs(unitId);
