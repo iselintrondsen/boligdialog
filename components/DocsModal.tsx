@@ -58,10 +58,11 @@ export function DocsModal({ visible, onClose, unitId, unitNumber }: Props) {
       const path = `${user!.id}/${unitId}/${Date.now()}_${name}`;
       const { error } = await uploadToStorage('documents', path, uri, mimeType, name);
       if (error) throw error;
-      await supabase.from('documents').insert({
+      const { error: dbErr } = await supabase.from('documents').insert({
         unit_id: unitId, uploaded_by: user!.id,
         name, category, storage_path: path, file_size: 0,
       });
+      if (dbErr) throw dbErr;
       await fetchDocs();
     } catch (e: any) {
       Alert.alert('Feil', e.message ?? 'Kunne ikke laste opp.');
@@ -130,13 +131,8 @@ export function DocsModal({ visible, onClose, unitId, unitNumber }: Props) {
     if (isImage(doc.name)) {
       setPreviewUrl(data.signedUrl);
     } else {
-      // Åpne i systemets innebygde visningsprogram (Safari/Files for PDF/Word)
-      const canOpen = await Linking.canOpenURL(data.signedUrl);
-      if (canOpen) {
-        await Linking.openURL(data.signedUrl);
-      } else {
-        Alert.alert('Kan ikke åpne', 'Installer en app som støtter denne filtypen.');
-      }
+      // Åpne i Safari/system viewer (HTTPS URLs åpnes alltid)
+      await Linking.openURL(data.signedUrl);
     }
   };
 
