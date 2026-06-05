@@ -174,7 +174,7 @@ export default function TenantInspectionsScreen() {
               // Upload tenant photo if new
               if (rs.newPhotoUri) {
                 const path = `inspections/${selectedReport.id}/${rs.itemId}_tenant_${rs.newPhotoName}`;
-                const { error: upErr } = await uploadToStorage('documents', path, rs.newPhotoUri, rs.newMimeType);
+                const { error: upErr } = await uploadToStorage('documents', path, rs.newPhotoUri, rs.newMimeType, rs.newPhotoName);
                 if (upErr) throw upErr;
                 await supabase.from('inspection_photos').insert({ item_id: rs.itemId, storage_path: path, uploaded_by: user!.id });
               }

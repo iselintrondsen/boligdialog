@@ -51,7 +51,7 @@ export default function TenantDocumentsScreen() {
     setUploading(true);
     try {
       const path = `${user!.id}/${unitId}/${Date.now()}_${file.name}`;
-      const { error: upErr } = await uploadToStorage('documents', path, file.uri, file.mimeType);
+      const { error: upErr } = await uploadToStorage('documents', path, file.uri, file.mimeType, file.name);
       if (upErr) throw upErr;
       const { error: dbErr } = await supabase.from('documents').insert({
         unit_id: unitId, uploaded_by: user!.id,

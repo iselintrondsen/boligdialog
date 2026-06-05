@@ -4,7 +4,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Clipboard from 'expo-clipboard';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
-import { uploadToStorage } from '@/lib/uploadFile';
+import { DocsModal } from '@/components/DocsModal';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
@@ -106,124 +106,14 @@ export default function PropertyDetailScreen() {
   const [historyUnit, setHistoryUnit] = useState<UnitWithInvite | null>(null);
   const [endingLease, setEndingLease] = useState(false);
 
-  // Documents
+  // Documents — handled by DocsModal component
   const [showDocsModal, setShowDocsModal] = useState(false);
   const [docsUnit, setDocsUnit] = useState<UnitWithInvite | null>(null);
-  const [docs, setDocs] = useState<DocumentRow[]>([]);
-  const [loadingDocs, setLoadingDocs] = useState(false);
-  const [uploadingDoc, setUploadingDoc] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [previewVisible, setPreviewVisible] = useState(false);
-  const [pendingDoc, setPendingDoc] = useState<{ uri: string; name: string; mimeType: string } | null>(null);
-  const [showDocCatModal, setShowDocCatModal] = useState(false);
 
-  const fetchDocs = async (uid: string) => {
-    const { data } = await supabase.from('documents').select('*').eq('unit_id', uid).order('created_at', { ascending: false });
-    setDocs((data as DocumentRow[]) ?? []);
-  };
-
-  const openDocs = async (unit: UnitWithInvite) => {
+  const openDocs = (unit: UnitWithInvite) => {
     setDocsUnit(unit);
     setShowDocsModal(true);
-    setLoadingDocs(true);
-    await fetchDocs(unit.id);
-    setLoadingDocs(false);
   };
-
-  const doUpload = async (doc: { uri: string; name: string; mimeType: string }, category: DocumentCategory) => {
-    if (!docsUnit) return;
-    setUploadingDoc(true);
-    try {
-      const path = `${user!.id}/${docsUnit.id}/${Date.now()}_${doc.name}`;
-      const { error: upErr } = await uploadToStorage('documents', path, doc.uri, doc.mimeType);
-      if (upErr) throw upErr;
-      await supabase.from('documents').insert({
-        unit_id: docsUnit.id, uploaded_by: user!.id,
-        name: doc.name, category,
-        storage_path: path, file_size: 0,
-      });
-      await fetchDocs(docsUnit.id);
-    } catch (e: any) {
-      Alert.alert('Feil', e.message ?? 'Kunne ikke laste opp.');
-    } finally {
-      setUploadingDoc(false);
-      setPendingDoc(null);
-    }
-  };
-
-  const pickSource = (category: DocumentCategory) => {
-    setShowDocCatModal(false);
-    Alert.alert('Velg fil', 'Hvor vil du hente filen fra?', [
-      { text: 'Ta bilde med kamera', onPress: () => handleTakePhoto(category) },
-      { text: 'Velg fra bildebibliotek', onPress: () => handlePickImage(category) },
-      { text: 'Velg fil (PDF, Word, Excel)', onPress: () => handlePickDoc(category) },
-      { text: 'Avbryt', style: 'cancel' as const },
-    ]);
-  };
-
-  const handlePickDoc = async (category: DocumentCategory) => {
-    const result = await DocumentPicker.getDocumentAsync({
-      type: ['application/pdf', 'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'text/plain', 'image/*', '*/*'],
-      copyToCacheDirectory: true,
-    });
-    if (result.canceled || !result.assets[0]) return;
-    const a = result.assets[0];
-    const doc = { uri: a.uri, name: a.name, mimeType: a.mimeType ?? 'application/octet-stream' };
-    setPendingDoc(doc);
-    await doUpload(doc, category);
-  };
-
-  const handlePickImage = async (category: DocumentCategory) => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') { Alert.alert('Tillatelse kreves', 'Gi tilgang til bildebiblioteket i innstillinger.'); return; }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: 'images', quality: 0.85, allowsMultipleSelection: false });
-    if (result.canceled || !result.assets[0]) return;
-    const a = result.assets[0];
-    const ext = a.mimeType === 'image/heic' ? 'heic' : (a.mimeType?.split('/')[1] ?? 'jpg');
-    const doc = { uri: a.uri, name: a.fileName ?? `bilde_${Date.now()}.${ext}`, mimeType: a.mimeType ?? 'image/jpeg' };
-    setPendingDoc(doc);
-    await doUpload(doc, category);
-  };
-
-  const handleTakePhoto = async (category: DocumentCategory) => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') { Alert.alert('Tillatelse kreves', 'Gi tilgang til kameraet i innstillinger.'); return; }
-    const result = await ImagePicker.launchCameraAsync({ quality: 0.85, mediaTypes: 'images' });
-    if (result.canceled || !result.assets[0]) return;
-    const a = result.assets[0];
-    const ext = a.mimeType?.split('/')[1] ?? 'jpg';
-    const doc = { uri: a.uri, name: `foto_${Date.now()}.${ext}`, mimeType: a.mimeType ?? 'image/jpeg' };
-    setPendingDoc(doc);
-    await doUpload(doc, category);
-  };
-
-  const handleDocPress = async (doc: DocumentRow) => {
-    const { data, error } = await supabase.storage.from('documents').createSignedUrl(doc.storage_path, 60);
-    if (error || !data) { Alert.alert('Feil', 'Kunne ikke åpne filen.'); return; }
-    if (isImage(doc.name)) {
-      setPreviewUrl(data.signedUrl);
-      setPreviewVisible(true);
-    } else {
-      Alert.alert(doc.name, `Størrelse: ${(doc.file_size / 1024).toFixed(1)} KB\nKategori: ${DOC_CATEGORIES.find(c => c.key === doc.category)?.label}`);
-    }
-  };
-
-  const handleDeleteDoc = (doc: DocumentRow) => {
-    Alert.alert('Slett dokument', `Vil du slette "${doc.name}"? Dette kan ikke angres.`, [
-      { text: 'Avbryt', style: 'cancel' },
-      { text: 'Slett', style: 'destructive', onPress: async () => {
-        await supabase.storage.from('documents').remove([doc.storage_path]);
-        await supabase.from('documents').delete().eq('id', doc.id);
-        setDocs(prev => prev.filter(d => d.id !== doc.id));
-      }},
-    ]);
-  };
-
-  const showUploadOptions = () => setShowDocCatModal(true);
 
   // Expenses
   const [showExpensesModal, setShowExpensesModal] = useState(false);
@@ -655,77 +545,15 @@ export default function PropertyDetailScreen() {
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* Documents Modal */}
-      <Modal visible={showDocsModal} animationType="slide" presentationStyle="pageSheet">
-        <SafeAreaView style={s.modal}>
-          <View style={s.modalHeader}>
-            <TouchableOpacity onPress={() => setShowDocsModal(false)}><Text style={s.cancel}>Lukk</Text></TouchableOpacity>
-            <Text style={s.modalTitle}>Dokumenter – Enhet {docsUnit?.unit_number}</Text>
-            <TouchableOpacity onPress={showUploadOptions} disabled={uploadingDoc}>
-              {uploadingDoc ? <ActivityIndicator color={BLUE} size="small" /> : <Text style={s.saveText}>+ Last opp</Text>}
-            </TouchableOpacity>
-          </View>
-
-          {loadingDocs ? <ActivityIndicator style={{ marginTop: 40 }} color={BLUE} /> : (
-            <ScrollView contentContainerStyle={s.modalBody}>
-              {docs.length === 0 ? (
-                <View style={s.empty}>
-                  <Ionicons name="document-text-outline" size={40} color="#D1D5DB" />
-                  <Text style={s.emptyText}>Ingen dokumenter lastet opp ennå.</Text>
-                </View>
-              ) : docs.map(doc => {
-                const cat = DOC_CATEGORIES.find(c => c.key === doc.category) ?? DOC_CATEGORIES[3];
-                return (
-                  <TouchableOpacity key={doc.id} style={s.expenseCard} onPress={() => handleDocPress(doc)}>
-                    <View style={[s.expenseCatIcon, { backgroundColor: cat.color + '18' }]}>
-                      <Ionicons name={(isImage(doc.name) ? 'image-outline' : cat.icon) as any} size={18} color={cat.color} />
-                    </View>
-                    <View style={s.expenseInfo}>
-                      <Text style={s.expenseDesc} numberOfLines={1}>{doc.name}</Text>
-                      <Text style={s.expenseMeta}>{cat.label} · {(doc.file_size / 1024).toFixed(1)} KB · {new Date(doc.created_at).toLocaleDateString('nb-NO')}</Text>
-                    </View>
-                    <TouchableOpacity onPress={() => handleDeleteDoc(doc)} style={{ padding: 4 }}>
-                      <Ionicons name="trash-outline" size={16} color="#EF4444" />
-                    </TouchableOpacity>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          )}
-        </SafeAreaView>
-      </Modal>
-
-      {/* Image preview */}
-      <Modal visible={previewVisible} transparent animationType="fade">
-        <TouchableOpacity style={s.overlay} activeOpacity={1} onPress={() => setPreviewVisible(false)}>
-          {previewUrl && <Image source={{ uri: previewUrl }} style={s.previewImg} resizeMode="contain" />}
-          <TouchableOpacity style={s.closePreview} onPress={() => setPreviewVisible(false)}>
-            <Ionicons name="close-circle" size={36} color="#fff" />
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
-
-      {/* Document category picker */}
-      {/* Document Category Picker */}
-      <Modal visible={showDocCatModal} transparent animationType="slide">
-        <TouchableOpacity style={s.backdrop} activeOpacity={1} onPress={() => setShowDocCatModal(false)}>
-          <View style={s.sheet}>
-            <View style={s.sheetHandle} />
-            <Text style={s.sheetTitle}>Velg kategori</Text>
-            <View style={s.catList}>
-              {DOC_CATEGORIES.map(cat => (
-                <TouchableOpacity key={cat.key} style={s.catRow} onPress={() => pickSource(cat.key)}>
-                  <View style={[s.catIcon, { backgroundColor: cat.color + '18' }]}>
-                    <Ionicons name={cat.icon as any} size={22} color={cat.color} />
-                  </View>
-                  <Text style={s.catLabel}>{cat.label}</Text>
-                  <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        </TouchableOpacity>
-      </Modal>
+      {/* Documents — isolated component to prevent full-screen re-renders */}
+      {docsUnit && (
+        <DocsModal
+          visible={showDocsModal}
+          onClose={() => setShowDocsModal(false)}
+          unitId={docsUnit.id}
+          unitNumber={docsUnit.unit_number}
+        />
+      )}
 
       {/* Unit Settings Modal */}
       <Modal visible={showUnitSettingsModal} animationType="slide" presentationStyle="pageSheet">

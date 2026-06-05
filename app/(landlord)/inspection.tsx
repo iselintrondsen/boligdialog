@@ -202,7 +202,7 @@ export default function InspectionScreen() {
           
           
           const path = `inspections/${selectedReport.id}/${itemId}_${rs.newPhotoName}`;
-          const { error: upErr } = await uploadToStorage('documents', path, rs.newPhotoUri, rs.newMimeType);
+          const { error: upErr } = await uploadToStorage('documents', path, rs.newPhotoUri, rs.newMimeType, rs.newPhotoName);
           if (upErr) throw upErr;
           await supabase.from('inspection_photos').insert({ item_id: itemId, storage_path: path, uploaded_by: user!.id });
         }
@@ -240,7 +240,7 @@ export default function InspectionScreen() {
           
           
           const path = `inspections/${selectedReport.id}/${itemId}_${rs.newPhotoName}`;
-          const { error: upErr } = await uploadToStorage('documents', path, rs.newPhotoUri, rs.newMimeType);
+          const { error: upErr } = await uploadToStorage('documents', path, rs.newPhotoUri, rs.newMimeType, rs.newPhotoName);
           if (upErr) throw upErr;
           const { data: pData } = await supabase.from('inspection_photos')
             .insert({ item_id: itemId, storage_path: path, uploaded_by: user!.id }).select().single();
