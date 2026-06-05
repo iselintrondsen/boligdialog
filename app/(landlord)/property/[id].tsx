@@ -1,9 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, FlatList, TouchableOpacity, Modal, TextInput, StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, Image, Animated } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { useState, useEffect, useCallback } from 'react';
+import { View, Text, FlatList, TouchableOpacity, Modal, TextInput, StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import * as DocumentPicker from 'expo-document-picker';
-import * as ImagePicker from 'expo-image-picker';
 import { DocsModal } from '@/components/DocsModal';
 import { ExpensesModal } from '@/components/ExpensesModal';
 import { UnitDetailSheet, UnitSheetData } from '@/components/UnitDetailSheet';
@@ -11,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
-import { PropertyRow, UnitRow, ExpenseRow, ExpenseCategory, DocumentRow, DocumentCategory, LeaseRow } from '@/lib/types';
+import { PropertyRow, UnitRow, DocumentCategory, LeaseRow } from '@/lib/types';
 import { Ionicons } from '@expo/vector-icons';
 
 
@@ -107,64 +104,6 @@ export default function PropertyDetailScreen() {
   const [expUnitId, setExpUnitId]   = useState('');
   const [expUnitNum, setExpUnitNum] = useState('');
 
-  // Expenses
-  const [showExpensesModal, setShowExpensesModal] = useState(false);
-  const [expenseUnit, setExpenseUnit] = useState<UnitWithInvite | null>(null);
-  const [expenses, setExpenses] = useState<ExpenseRow[]>([]);
-  const [loadingExpenses, setLoadingExpenses] = useState(false);
-  const [showAddExpenseForm, setShowAddExpenseForm] = useState(false);
-  const [savingExpense, setSavingExpense] = useState(false);
-  const [expenseForm, setExpenseForm] = useState({ amount: '', category: 'maintenance' as ExpenseCategory, description: '', date: new Date() });
-  const [showDatePicker, setShowDatePicker] = useState(false);
-
-  const EXPENSE_CATEGORIES: { key: ExpenseCategory; label: string; icon: string; color: string }[] = [
-    { key: 'maintenance', label: 'Vedlikehold', icon: 'construct-outline', color: '#3B82F6' },
-    { key: 'repair', label: 'Reparasjon', icon: 'hammer-outline', color: '#F59E0B' },
-    { key: 'utilities', label: 'Strøm/vann', icon: 'flash-outline', color: '#10B981' },
-    { key: 'insurance', label: 'Forsikring', icon: 'shield-outline', color: '#8B5CF6' },
-    { key: 'tax', label: 'Avgifter/skatt', icon: 'receipt-outline', color: '#EF4444' },
-    { key: 'other', label: 'Annet', icon: 'ellipsis-horizontal-outline', color: '#6B7280' },
-  ];
-
-  const openExpenses = async (unit: UnitWithInvite) => {
-    setExpenseUnit(unit);
-    setShowAddExpenseForm(false);
-    setShowExpensesModal(true);
-    setLoadingExpenses(true);
-    const { data } = await supabase.from('expenses').select('*').eq('unit_id', unit.id).order('date', { ascending: false });
-    setExpenses((data as ExpenseRow[]) ?? []);
-    setLoadingExpenses(false);
-  };
-
-  const handleSaveExpense = async () => {
-    if (!expenseForm.amount || isNaN(parseFloat(expenseForm.amount))) { Alert.alert('Feil', 'Skriv inn et gyldig beløp.'); return; }
-    if (!expenseForm.description.trim()) { Alert.alert('Feil', 'Beskrivelse er påkrevd.'); return; }
-    setSavingExpense(true);
-    const { error } = await supabase.from('expenses').insert({
-      unit_id: expenseUnit!.id,
-      landlord_id: user!.id,
-      amount: parseFloat(expenseForm.amount),
-      category: expenseForm.category,
-      description: expenseForm.description.trim(),
-      date: expenseForm.date.toISOString().split('T')[0],
-    });
-    setSavingExpense(false);
-    if (error) { Alert.alert('Feil', error.message); return; }
-    setShowAddExpenseForm(false);
-    setExpenseForm({ amount: '', category: 'maintenance', description: '', date: new Date() });
-    const { data } = await supabase.from('expenses').select('*').eq('unit_id', expenseUnit!.id).order('date', { ascending: false });
-    setExpenses((data as ExpenseRow[]) ?? []);
-  };
-
-  const handleDeleteExpense = (expense: ExpenseRow) => {
-    Alert.alert('Slett utgift', `Vil du slette "${expense.description}"? Dette kan ikke angres.`, [
-      { text: 'Avbryt', style: 'cancel' },
-      { text: 'Slett utgift', style: 'destructive', onPress: async () => {
-        await supabase.from('expenses').delete().eq('id', expense.id);
-        setExpenses(prev => prev.filter(e => e.id !== expense.id));
-      }},
-    ]);
-  };
 
   const fetchData = useCallback(async () => {
     if (!id) return;
@@ -604,134 +543,6 @@ export default function PropertyDetailScreen() {
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* Expenses Modal — contains both list and add-form views */}
-      <Modal visible={showExpensesModal} animationType="slide" presentationStyle="pageSheet">
-        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <SafeAreaView style={s.modal}>
-            <View style={s.modalHeader}>
-              <TouchableOpacity onPress={() => {
-                if (showAddExpenseForm) { setShowAddExpenseForm(false); }
-                else { setShowExpensesModal(false); }
-              }}>
-                <Text style={s.cancel}>{showAddExpenseForm ? 'Avbryt' : 'Lukk'}</Text>
-              </TouchableOpacity>
-              <Text style={s.modalTitle}>
-                {showAddExpenseForm ? 'Ny utgift' : `Utgifter – Enhet ${expenseUnit?.unit_number}`}
-              </Text>
-              {showAddExpenseForm ? (
-                <TouchableOpacity onPress={handleSaveExpense} disabled={savingExpense}>
-                  {savingExpense ? <ActivityIndicator color={BLUE} /> : <Text style={s.saveText}>Lagre</Text>}
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity onPress={() => {
-                  setExpenseForm({ amount: '', category: 'maintenance', description: '', date: new Date() });
-                  setShowDatePicker(false);
-                  setShowAddExpenseForm(true);
-                }}>
-                  <Text style={s.saveText}>+ Ny</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {showAddExpenseForm ? (
-              <ScrollView contentContainerStyle={s.modalBody}>
-                <View style={s.field}>
-                  <Text style={s.label}>Beløp (kr)</Text>
-                  <TextInput style={s.input} placeholder="2500" placeholderTextColor="#9CA3AF"
-                    keyboardType="numeric" autoFocus value={expenseForm.amount}
-                    onChangeText={v => setExpenseForm(p => ({ ...p, amount: v }))} />
-                </View>
-                <View style={s.field}>
-                  <Text style={s.label}>Kategori</Text>
-                  <View style={s.catGrid}>
-                    {EXPENSE_CATEGORIES.map(cat => (
-                      <TouchableOpacity key={cat.key}
-                        style={[s.catBtn, expenseForm.category === cat.key && { borderColor: cat.color, backgroundColor: cat.color + '12' }]}
-                        onPress={() => setExpenseForm(p => ({ ...p, category: cat.key }))}>
-                        <Ionicons name={cat.icon as any} size={16} color={expenseForm.category === cat.key ? cat.color : '#6B7280'} />
-                        <Text style={[s.catBtnText, expenseForm.category === cat.key && { color: cat.color, fontWeight: '600' }]}>{cat.label}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </View>
-                <View style={s.field}>
-                  <Text style={s.label}>Beskrivelse</Text>
-                  <TextInput style={s.input} placeholder="Eks: Byttet varmtvannsbereder" placeholderTextColor="#9CA3AF"
-                    value={expenseForm.description} onChangeText={v => setExpenseForm(p => ({ ...p, description: v }))} />
-                </View>
-                <View style={s.field}>
-                  <Text style={s.label}>Dato</Text>
-                  <TouchableOpacity style={s.dateBtn} onPress={() => setShowDatePicker(true)}>
-                    <Ionicons name="calendar-outline" size={18} color={BLUE} />
-                    <Text style={s.dateBtnText}>
-                      {expenseForm.date.toLocaleDateString('nb-NO', { day: 'numeric', month: 'long', year: 'numeric' })}
-                    </Text>
-                  </TouchableOpacity>
-                  {showDatePicker && (
-                    <DateTimePicker
-                      value={expenseForm.date}
-                      mode="date"
-                      display={Platform.OS === 'ios' ? 'inline' : 'default'}
-                      locale="nb-NO"
-                      maximumDate={new Date()}
-                      onChange={(_, selectedDate) => {
-                        if (Platform.OS === 'android') setShowDatePicker(false);
-                        if (selectedDate) setExpenseForm(p => ({ ...p, date: selectedDate }));
-                      }}
-                      style={{ marginTop: 8, width: '100%' }}
-                    />
-                  )}
-                  {showDatePicker && Platform.OS === 'ios' && (
-                    <TouchableOpacity onPress={() => setShowDatePicker(false)} style={s.dateCloseBtn}>
-                      <Text style={{ color: BLUE, fontWeight: '600' }}>Ferdig</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </ScrollView>
-            ) : loadingExpenses ? (
-              <ActivityIndicator style={{ marginTop: 40 }} color={BLUE} />
-            ) : (
-              <ScrollView contentContainerStyle={s.modalBody}>
-                {expenses.length > 0 && (
-                  <View style={s.expenseSummary}>
-                    <Text style={s.expenseSummaryLabel}>Totalt</Text>
-                    <Text style={s.expenseSummaryAmount}>
-                      {expenses.reduce((sum, e) => sum + Number(e.amount), 0).toLocaleString('nb-NO')} kr
-                    </Text>
-                  </View>
-                )}
-                {expenses.length === 0 ? (
-                  <View style={s.empty}>
-                    <Ionicons name="wallet-outline" size={40} color="#D1D5DB" />
-                    <Text style={s.emptyText}>Ingen utgifter registrert ennå.</Text>
-                  </View>
-                ) : (
-                  expenses.map(expense => {
-                    const cat = EXPENSE_CATEGORIES.find(c => c.key === expense.category)!;
-                    return (
-                      <View key={expense.id} style={s.expenseCard}>
-                        <View style={[s.expenseCatIcon, { backgroundColor: cat.color + '18' }]}>
-                          <Ionicons name={cat.icon as any} size={18} color={cat.color} />
-                        </View>
-                        <View style={s.expenseInfo}>
-                          <Text style={s.expenseDesc}>{expense.description}</Text>
-                          <Text style={s.expenseMeta}>{cat.label} · {expense.date}</Text>
-                        </View>
-                        <View style={s.expenseRight}>
-                          <Text style={s.expenseAmount}>{Number(expense.amount).toLocaleString('nb-NO')} kr</Text>
-                          <TouchableOpacity onPress={() => handleDeleteExpense(expense)}>
-                            <Ionicons name="trash-outline" size={16} color="#EF4444" />
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    );
-                  })
-                )}
-              </ScrollView>
-            )}
-          </SafeAreaView>
-        </KeyboardAvoidingView>
-      </Modal>
 
       {/* Property Settings Modal */}
       <Modal visible={showPropertySettingsModal} animationType="slide" presentationStyle="pageSheet">
