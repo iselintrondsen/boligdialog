@@ -30,6 +30,7 @@ export default function TenantHomeScreen() {
   const [lease, setLease]               = useState<LeaseInfo | null>(null);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading]           = useState(true);
+  const [refreshKey, setRefreshKey]     = useState(0);
 
   const handleEnterCode = () => {
     Alert.prompt(
@@ -66,9 +67,7 @@ export default function TenantHomeScreen() {
         await supabase.from('invitations').update({ status: 'accepted' }).eq('id', inv.id);
 
         Alert.alert('Koblet!', 'Du er nå koblet til utleieren din.', [{ text: 'OK' }]);
-        // Last inn på nytt
-        setLoading(true);
-        setLease(null);
+        setRefreshKey(k => k + 1);
       },
       'plain-text'
     );
@@ -110,7 +109,7 @@ export default function TenantHomeScreen() {
       setLoading(false);
     };
     fetchData();
-  }, [user]);
+  }, [user, refreshKey]);
 
   return (
     <SafeAreaView style={s.safe} edges={['bottom']}>

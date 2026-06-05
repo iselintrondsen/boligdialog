@@ -212,7 +212,7 @@ export default function PropertyDetailScreen() {
     if (!inviteEmail.trim() || !inviteEmail.includes('@')) { Alert.alert('Feil', 'Skriv inn en gyldig e-postadresse.'); return; }
     if (!inviteUnit) return;
     setSendingInvite(true);
-    const token = Math.random().toString(36).substring(2) + Date.now().toString(36);
+    const token = String(Math.floor(100000 + Math.random() * 900000));
     const { error } = await supabase.from('invitations').insert({
       unit_id: inviteUnit.id, landlord_id: user!.id,
       email: inviteEmail.trim().toLowerCase(), token, status: 'pending',
@@ -220,9 +220,8 @@ export default function PropertyDetailScreen() {
     });
     setSendingInvite(false);
     if (error) { Alert.alert('Feil', error.message); return; }
-    const link = `boligdialog://invite/${token}`;
-    await Clipboard.setStringAsync(link);
-    Alert.alert('Invitasjon opprettet!', `Lenken er kopiert til utklippstavlen:\n\n${link}`, [{ text: 'OK' }]);
+    await Clipboard.setStringAsync(token);
+    Alert.alert('Invitasjonskode opprettet!', `Gi leietaker denne 6-sifrede koden:\n\n${token}\n\nKoden er kopiert til utklippstavlen og er gyldig i 7 dager.`, [{ text: 'OK' }]);
     setShowInviteModal(false);
     setInviteEmail('');
     setInviteUnit(null);
