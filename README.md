@@ -1,48 +1,38 @@
 # BoligDialog
 
-Norsk mobil-app som samler all kommunikasjon mellom utleier og leietaker på ett sted — meldinger, feilmeldinger, dokumenter, rapporter og leiehistorikk.
+🚧 **Under utvikling** — ikke publisert ennå
+
+Norsk mobil-app som samler all kommunikasjon mellom utleier og leietaker på ett sted — meldinger, feilmeldinger, dokumenter, rapporter og leiehistorikk, med sanntidsoppdateringer.
 
 ---
 
-## Kom i gang
+## Skjermbilder
 
-### Forutsetninger
+<table>
+  <tr>
+    <td align="center" width="20%"><img src="screenshots/login.png" width="100%" alt="Innlogging"/><br/><sub>Innlogging</sub></td>
+    <td align="center" width="20%"><img src="screenshots/dashboard-utleier.png" width="100%" alt="Dashboard, utleier"/><br/><sub>Dashboard (utleier)</sub></td>
+    <td align="center" width="20%"><img src="screenshots/feilmeldinger.png" width="100%" alt="Feilmeldinger"/><br/><sub>Feilmeldinger</sub></td>
+    <td align="center" width="20%"><img src="screenshots/meldinger.png" width="100%" alt="Meldinger"/><br/><sub>Meldinger</sub></td>
+    <td align="center" width="20%"><img src="screenshots/hjem-leietaker.png" width="100%" alt="Hjem, leietaker"/><br/><sub>Hjem (leietaker)</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="screenshots/enhet-detalj.png" width="100%" alt="Enhetsdetaljer"/><br/><sub>Enhetsdetaljer</sub></td>
+    <td align="center"><img src="screenshots/enhet-tom.png" width="100%" alt="Enhet uten leietaker"/><br/><sub>Enhet uten leietaker</sub></td>
+  </tr>
+</table>
 
-- Node.js 18+
-- [Expo CLI](https://docs.expo.dev/get-started/installation/)
-- Supabase-prosjekt (se [supabase.com](https://supabase.com))
-- iOS Simulator / Android Emulator, eller Expo Go på fysisk enhet
+> Skjermbildene viser design og datamodell med fiktivt eksempeldata (ingen ekte bruker- eller leietakerdata).
 
-### Installasjon
+---
 
-```bash
-git clone <repo-url>
-cd boligdialog
-npm install
-```
+## Om prosjektet
 
-### Miljøvariabler
+BoligDialog løser et konkret problem for private utleiere: kommunikasjon med leietakere er i dag spredt over SMS, e-post og løse Word-dokumenter. Appen samler det i to skreddersydde grensesnitt — ett for utleier, ett for leietaker — bygget rundt de samme dataene i sanntid.
 
-Opprett en `.env`-fil i rotkatalogen:
+**Utleier** får oversikt over alle eiendommer og enheter, kan invitere leietakere med en kode, følge opp feilmeldinger med statusflyt, chatte per enhet, og gjennomføre inn-/utflyttingsrapporter med bilder og signering.
 
-```env
-EXPO_PUBLIC_SUPABASE_URL=https://<ditt-prosjekt>.supabase.co
-EXPO_PUBLIC_SUPABASE_ANON_KEY=<din-anon-nøkkel>
-```
-
-### Database
-
-Kjør migrasjonen i Supabase SQL Editor:
-
-```bash
-# Lim inn innholdet i supabase/migrations.sql
-```
-
-### Start appen
-
-```bash
-npx expo start
-```
+**Leietaker** får ett sted å melde feil, se kontrakt og kvitteringer, chatte med utleier, og signere rapporter digitalt.
 
 ---
 
@@ -85,8 +75,10 @@ npx expo start
 | Backend / DB | Supabase (PostgreSQL + Auth + Storage) |
 | Sanntid | Supabase Realtime (Postgres Changes) |
 | Tilstand | Zustand |
+| Skjemavalidering | React Hook Form + Zod |
 | Ikoner | @expo/vector-icons (Ionicons) |
 | Autentisering | Supabase Auth med SecureStore |
+| Testing | Jest + jest-expo |
 
 ---
 
@@ -124,11 +116,123 @@ boligdialog/
 ├── stores/
 │   └── authStore.ts             # Zustand: session, user, loading, signOut
 ├── assets/                      # Bilder og ikoner
+├── screenshots/                 # Skjermbilder brukt i denne READMEen
 ├── supabase/
 │   └── migrations.sql           # Database-migrasjoner
 └── landing/
     └── index.html               # Landingsside
 ```
+
+---
+
+## Kom i gang
+
+### Forutsetninger
+
+- Node.js 18+
+- [Expo CLI](https://docs.expo.dev/get-started/installation/)
+- [EAS CLI](https://docs.expo.dev/eas/) — `npm install -g eas-cli`
+- Supabase-prosjekt (se [supabase.com](https://supabase.com))
+- Apple Developer-konto (for TestFlight/App Store)
+- iOS Simulator / Android Emulator, eller Expo Go på fysisk enhet
+
+### Installasjon
+
+```bash
+git clone <repo-url>
+cd boligdialog
+npm install
+```
+
+### Miljøvariabler
+
+Kopier `.env.example` og fyll inn verdiene:
+
+```bash
+cp .env.example .env
+```
+
+```env
+EXPO_PUBLIC_SUPABASE_URL=https://<ditt-prosjekt>.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=<din-anon-nøkkel>
+```
+
+> ⚠️ `.env` skal aldri committes. Legg produksjonsvariabler inn i EAS Secrets.
+
+### Database
+
+Kjør migrasjonen i Supabase SQL Editor:
+
+```bash
+# Lim inn innholdet i supabase/migrations.sql
+```
+
+### Start appen (lokal utvikling)
+
+```bash
+npx expo start
+```
+
+---
+
+## Bygg og distribusjon
+
+### EAS Build
+
+Logg inn og koble til Expo-prosjektet:
+
+```bash
+eas login
+eas init   # første gang — oppretter prosjekt-ID på expo.dev
+```
+
+Legg til miljøvariabler som EAS Secrets (gjøres én gang):
+
+```bash
+eas secret:create --scope project --name EXPO_PUBLIC_SUPABASE_URL --value <verdi>
+eas secret:create --scope project --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value <verdi>
+```
+
+### TestFlight
+
+```bash
+# Bygg for iOS TestFlight
+eas build --platform ios --profile preview
+
+# Send til TestFlight automatisk etter bygg
+eas submit --platform ios --profile production
+```
+
+### App Store
+
+```bash
+# Produksjonsbygg
+eas build --platform ios --profile production
+
+# Submit til App Store Connect
+eas submit --platform ios --profile production
+```
+
+> Fyll inn `ascAppId` og `appleTeamId` i `eas.json` før submit.
+
+---
+
+## Veikart
+
+- [ ] Push-varsler for nye meldinger og feilmeldinger
+- [ ] Android-testing og -lansering
+- [ ] Betalingsintegrasjon for husleie
+- [ ] Eksport av rapporter til PDF
+
+---
+
+## Om utvikleren
+
+Laget av **Iselin Trondsen**, frontend-utvikler.
+
+[![GitHub](https://img.shields.io/badge/GitHub-iselintrondsen-181717?style=flat&logo=github)](https://github.com/iselintrondsen)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-iselin--trondsen-0A66C2?style=flat&logo=linkedin)](https://linkedin.com/in/iselin-trondsen)
+[![E-post](https://img.shields.io/badge/E--post-iselintrondsen%40hotmail.com-EA4335?style=flat&logo=gmail&logoColor=white)](mailto:iselintrondsen@hotmail.com)
 
 ---
 

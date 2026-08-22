@@ -255,7 +255,18 @@ ALTER TABLE public.documents ENABLE ROW LEVEL SECURITY;
 
 DO $$ BEGIN
   CREATE POLICY "Tilgang til dokumenter i sin enhet" ON public.documents
-    FOR ALL USING (
+    FOR ALL
+    USING (
+      EXISTS (
+        SELECT 1 FROM public.units u
+        WHERE u.id = unit_id
+        AND (u.tenant_id = auth.uid() OR EXISTS (
+          SELECT 1 FROM public.properties p
+          WHERE p.id = u.property_id AND p.landlord_id = auth.uid()
+        ))
+      )
+    )
+    WITH CHECK (
       EXISTS (
         SELECT 1 FROM public.units u
         WHERE u.id = unit_id
@@ -417,4 +428,59 @@ DO $$ BEGIN
   CREATE POLICY "Autentiserte brukere kan slette egne dokumenter"
     ON storage.objects FOR DELETE
     USING (bucket_id = 'documents' AND auth.uid()::text = (storage.foldername(name))[1]);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- ============================================================================
+-- 14. LEASES + LEIETAKER-KOBLING (migrasjon 002)
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS public.leases (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  unit_id     UUID NOT NULL REFERENCES public.units(id) ON DELETE CASCADE,
+  tenant_id   UUID NOT NULL REFERENCES public.users(id),
+  started_at  DATE NOT NULL,
+  ended_at    DATE,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE public.leases ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX IF NOT EXISTS idx_leases_unit_id   ON public.leases(unit_id);
+CREATE INDEX IF NOT EXISTS idx_leases_tenant_id ON public.leases(tenant_id);
+
+DO $$ BEGIN
+  CREATE POLICY "Leietaker ser egne leieforhold" ON public.leases
+    FOR SELECT USING (tenant_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE POLICY "Leietaker oppretter eget leieforhold" ON public.leases
+    FOR INSERT WITH CHECK (tenant_id = auth.uid());
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE POLICY "Utleier administrerer leieforhold" ON public.leases
+    FOR ALL USING (
+      EXISTS (
+        SELECT 1 FROM public.units u
+        JOIN public.properties p ON p.id = u.property_id
+        WHERE u.id = unit_id AND p.landlord_id = auth.uid()
+      )
+    );
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE POLICY "Leietaker kan koble seg til enhet via invitasjon" ON public.units
+    FOR UPDATE
+    USING (
+      tenant_id IS NULL
+      AND EXISTS (
+        SELECT 1 FROM public.invitations i
+        JOIN public.users u ON u.id = auth.uid()
+        WHERE i.unit_id = units.id
+          AND i.email   = u.email
+          AND i.status  = 'pending'
+          AND i.expires_at > NOW()
+      )
+    )
+    WITH CHECK (tenant_id = auth.uid());
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;

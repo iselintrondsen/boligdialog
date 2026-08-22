@@ -381,16 +381,40 @@
       display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px;
       padding-bottom: 48px; border-bottom: 1px solid rgba(255,255,255,0.1);
     }
-    .footer-brand img { height: 48px; object-fit: contain; margin-bottom: 14px; }
+    .footer-brand { display: flex; flex-direction: column; align-items: flex-start; }
+    .footer-brand img { height: 72px; object-fit: contain; margin-bottom: 14px; }
     .footer-brand p { color: rgba(255,255,255,0.45); font-size: 14px; line-height: 1.65; max-width: 260px; }
     .footer-col h4 { font-size: 12px; font-weight: 700; margin-bottom: 18px; opacity: 0.85; letter-spacing: 0.8px; text-transform: uppercase; }
     .footer-col a { display: block; color: rgba(255,255,255,0.45); font-size: 14px; text-decoration: none; margin-bottom: 11px; transition: color .2s; }
     .footer-col a:hover { color: #fff; }
     .footer-bottom {
       max-width: 1100px; margin: 28px auto 0;
-      display: flex; justify-content: space-between; align-items: center;
+      display: flex; justify-content: center; align-items: center;
       font-size: 13px; color: rgba(255,255,255,0.3);
     }
+    /* Personvern modal */
+    .pv-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      z-index: 1000; align-items: center; justify-content: center; padding: 24px;
+    }
+    .pv-overlay.open { display: flex; }
+    .pv-modal {
+      background: #fff; border-radius: 16px; max-width: 680px; width: 100%;
+      max-height: 80vh; overflow-y: auto; padding: 40px 40px 32px;
+      position: relative; color: var(--dark);
+    }
+    .pv-modal h2 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+    .pv-modal .pv-date { font-size: 13px; color: var(--gray); margin-bottom: 28px; }
+    .pv-modal h3 { font-size: 15px; font-weight: 700; margin: 22px 0 8px; }
+    .pv-modal p, .pv-modal li { font-size: 14px; line-height: 1.7; color: #374151; }
+    .pv-modal ul { padding-left: 20px; margin: 6px 0; }
+    .pv-close {
+      position: absolute; top: 16px; right: 16px;
+      background: #F3F4F6; border: none; border-radius: 50%;
+      width: 32px; height: 32px; cursor: pointer; font-size: 18px;
+      display: flex; align-items: center; justify-content: center; color: var(--dark);
+    }
+    .pv-close:hover { background: #E5E7EB; }
 
     /* ── RESPONSIVE ── */
     @media (max-width: 1100px) {
@@ -427,8 +451,8 @@
     <a href="#howitworks">Slik fungerer det</a>
     <a href="#utleier">Utleier</a>
     <a href="#leietaker">Leietaker</a>
+    <a href="#priser">Priser</a>
   </div>
-  <a href="#cta" class="nav-cta">Last ned gratis</a>
 </nav>
 
 <!-- HERO -->
@@ -517,7 +541,7 @@
       </div>
     </div>
 
-    <!-- Phone 2: Inspection (CENTER) -->
+    <!-- Phone 2: Units overview (CENTER) -->
     <div class="phone center">
       <div class="phone-inner" style="height:520px;">
         <div class="phone-notch"><div class="phone-notch-pill"></div></div>
@@ -525,49 +549,99 @@
           <div class="screen-header">
             <div class="screen-logo-wrap"><img src="../assets/transperant-icon2-cropped.png" /></div>
           </div>
+          <div style="background:#fff;padding:10px 12px 10px;border-bottom:1px solid #F3F4F6;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <ion-icon name="chevron-back-outline" style="font-size:13px;color:var(--blue);"></ion-icon>
+                <div>
+                  <div style="font-size:11px;font-weight:800;color:var(--dark);">Parkveien 12</div>
+                  <div style="font-size:8px;color:var(--gray);">0350 Oslo</div>
+                </div>
+              </div>
+              <div style="background:#F3F4F6;border-radius:7px;padding:4px 6px;">
+                <ion-icon name="settings-outline" style="font-size:11px;color:#6B7280;"></ion-icon>
+              </div>
+            </div>
+          </div>
           <div class="screen-body">
-            <div class="insp-banner">
-              <div class="insp-type-s">Innflyttingsrapport</div>
-              <div class="insp-title-s">Kirkeveien 45 · 2A</div>
-              <div class="insp-status-s">Under utfylling · 4 av 5 rom</div>
+            <!-- Enheter header -->
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <div style="font-size:9.5px;font-weight:700;color:var(--dark);">Enheter (5)</div>
+              <div style="background:var(--blue);border-radius:7px;padding:3px 8px;font-size:8px;font-weight:700;color:#fff;">+ Enhet</div>
             </div>
-            <div class="s-title">Tilstandsvurdering</div>
-            <div class="room-card-s">
-              <div class="room-row-s">
-                <div class="room-name-s"><ion-icon name="restaurant-outline"></ion-icon>Kjøkken</div>
-                <div class="cond cond-g">Bra</div>
+            <!-- Unit cards -->
+            <div style="display:flex;flex-direction:column;gap:6px;">
+
+              <div style="background:#fff;border-radius:10px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 1px 3px rgba(0,0,0,0.07);gap:12px;">
+                <div>
+                  <div style="font-size:9.5px;font-weight:700;color:var(--dark);">1A</div>
+                  <div style="font-size:8px;color:var(--blue);font-weight:600;">12 500 kr/mnd</div>
+                </div>
+                <div style="display:flex;gap:5px;">
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="document-text-outline" style="font-size:9px;color:#7C3AED;"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="wallet-outline" style="font-size:9px;color:var(--green);"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="clipboard-outline" style="font-size:9px;color:var(--amber);"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="mail-outline" style="font-size:9px;color:var(--blue);"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="settings-outline" style="font-size:9px;color:#9CA3AF;"></ion-icon></div>
+                </div>
               </div>
-              <div class="room-note-s">Rent og pent. Ingen synlige skader.</div>
-            </div>
-            <div class="room-card-s">
-              <div class="room-row-s">
-                <div class="room-name-s"><ion-icon name="water-outline"></ion-icon>Bad</div>
-                <div class="cond cond-o">Ok</div>
+
+              <div style="background:#fff;border-radius:10px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 1px 3px rgba(0,0,0,0.07);gap:12px;">
+                <div>
+                  <div style="font-size:9.5px;font-weight:700;color:var(--dark);">1B</div>
+                  <div style="font-size:8px;color:var(--blue);font-weight:600;">10 000 kr/mnd</div>
+                </div>
+                <div style="display:flex;gap:5px;">
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="document-text-outline" style="font-size:9px;color:#7C3AED;"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="wallet-outline" style="font-size:9px;color:var(--green);"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="clipboard-outline" style="font-size:9px;color:var(--amber);"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="mail-outline" style="font-size:9px;color:var(--blue);"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="settings-outline" style="font-size:9px;color:#9CA3AF;"></ion-icon></div>
+                </div>
               </div>
-              <div class="room-note-s">Kalkflekker på kran. Dokumentert.</div>
-            </div>
-            <div class="room-card-s">
-              <div class="room-row-s">
-                <div class="room-name-s"><ion-icon name="layers-outline"></ion-icon>Gulv</div>
-                <div class="cond cond-g">Bra</div>
+
+              <div style="background:#fff;border-radius:10px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 1px 3px rgba(0,0,0,0.07);gap:12px;">
+                <div>
+                  <div style="font-size:9.5px;font-weight:700;color:var(--dark);">2A</div>
+                  <div style="font-size:8px;color:var(--blue);font-weight:600;">13 000 kr/mnd</div>
+                </div>
+                <div style="display:flex;gap:5px;">
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="document-text-outline" style="font-size:9px;color:#7C3AED;"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="wallet-outline" style="font-size:9px;color:var(--green);"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="clipboard-outline" style="font-size:9px;color:var(--amber);"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="mail-outline" style="font-size:9px;color:var(--blue);"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="settings-outline" style="font-size:9px;color:#9CA3AF;"></ion-icon></div>
+                </div>
               </div>
-            </div>
-            <div class="room-card-s">
-              <div class="room-row-s">
-                <div class="room-name-s"><ion-icon name="square-outline"></ion-icon>Vegger</div>
-                <div class="cond cond-p">Dårlig</div>
+
+              <div style="background:#fff;border-radius:10px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 1px 3px rgba(0,0,0,0.07);gap:12px;">
+                <div>
+                  <div style="font-size:9.5px;font-weight:700;color:var(--dark);">2B</div>
+                  <div style="font-size:8px;color:var(--blue);font-weight:600;">9 500 kr/mnd</div>
+                </div>
+                <div style="display:flex;gap:5px;">
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="document-text-outline" style="font-size:9px;color:#7C3AED;"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="wallet-outline" style="font-size:9px;color:var(--green);"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="clipboard-outline" style="font-size:9px;color:var(--amber);"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="mail-outline" style="font-size:9px;color:var(--blue);"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="settings-outline" style="font-size:9px;color:#9CA3AF;"></ion-icon></div>
+                </div>
               </div>
-              <div class="room-note-s">Bulk i gang. Bilde lastet opp.</div>
-            </div>
-            <div class="room-card-s">
-              <div class="room-row-s">
-                <div class="room-name-s"><ion-icon name="ellipsis-horizontal-outline"></ion-icon>Annet</div>
-                <div class="cond cond-g">Bra</div>
+
+              <div style="background:#fff;border-radius:10px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 1px 3px rgba(0,0,0,0.07);gap:12px;">
+                <div>
+                  <div style="font-size:9.5px;font-weight:700;color:var(--dark);">3A</div>
+                  <div style="font-size:8px;color:var(--blue);font-weight:600;">11 000 kr/mnd</div>
+                </div>
+                <div style="display:flex;gap:5px;">
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="document-text-outline" style="font-size:9px;color:#7C3AED;"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="wallet-outline" style="font-size:9px;color:var(--green);"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="clipboard-outline" style="font-size:9px;color:var(--amber);"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="mail-outline" style="font-size:9px;color:var(--blue);"></ion-icon></div>
+                  <div style="background:#F3F4F6;border-radius:6px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;"><ion-icon name="settings-outline" style="font-size:9px;color:#9CA3AF;"></ion-icon></div>
+                </div>
               </div>
-            </div>
-            <div class="send-row-s">
-              <ion-icon name="send-outline"></ion-icon>
-              Send til leietaker for signering
+
             </div>
           </div>
         </div>
@@ -740,14 +814,16 @@
           </div>
         </div>
       </div>
-      <div class="phone-showcase">
-        <div class="phone" style="width:230px;">
+      <div class="phone-showcase" style="display:flex;gap:16px;align-items:flex-start;">
+
+        <!-- Innflyttingsrapport -->
+        <div class="phone" style="width:200px;">
           <div class="phone-inner" style="height:470px;">
             <div class="phone-notch"><div class="phone-notch-pill"></div></div>
             <div class="screen">
               <div class="screen-header" style="flex-direction:row;justify-content:space-between;align-items:center;">
                 <ion-icon name="chevron-back-outline" style="font-size:14px;color:var(--blue)"></ion-icon>
-                <div style="font-size:9px;font-weight:700;color:var(--dark);">Innflyttingsrapport</div>
+                <div style="font-size:8.5px;font-weight:700;color:var(--dark);">Innflyttingsrapport</div>
                 <div></div>
               </div>
               <div class="screen-body">
@@ -755,7 +831,7 @@
                   <ion-icon name="lock-closed-outline" style="font-size:15px;color:var(--green);flex-shrink:0"></ion-icon>
                   <div>
                     <div style="font-size:8px;font-weight:700;color:#065F46;">Rapport låst og ferdigstilt</div>
-                    <div style="font-size:7px;color:#6B7280;">Signert av begge · 12. jan 2025</div>
+                    <div style="font-size:7px;color:#6B7280;">Signert av begge · 12. jan 2026</div>
                   </div>
                 </div>
                 <div class="room-card-s">
@@ -763,13 +839,20 @@
                     <div class="room-name-s"><ion-icon name="restaurant-outline"></ion-icon>Kjøkken</div>
                     <div class="cond cond-g">Bra</div>
                   </div>
+                  <div style="display:flex;gap:4px;margin-top:5px;">
+                    <div style="width:26px;height:20px;background:#F3F4F6;border-radius:4px;display:flex;align-items:center;justify-content:center;"><ion-icon name="image-outline" style="font-size:10px;color:#9CA3AF;"></ion-icon></div>
+                    <div style="width:26px;height:20px;background:#F3F4F6;border-radius:4px;display:flex;align-items:center;justify-content:center;"><ion-icon name="image-outline" style="font-size:10px;color:#9CA3AF;"></ion-icon></div>
+                  </div>
                 </div>
                 <div class="room-card-s">
                   <div class="room-row-s">
                     <div class="room-name-s"><ion-icon name="water-outline"></ion-icon>Bad</div>
                     <div class="cond cond-o">Ok</div>
                   </div>
-                  <div class="room-note-s">Kalkflekker på dusjdør. Dokumentert.</div>
+                  <div class="room-note-s">Kalkflekker på dusjdør.</div>
+                  <div style="display:flex;gap:4px;margin-top:5px;">
+                    <div style="width:26px;height:20px;background:#F3F4F6;border-radius:4px;display:flex;align-items:center;justify-content:center;"><ion-icon name="image-outline" style="font-size:10px;color:#9CA3AF;"></ion-icon></div>
+                  </div>
                 </div>
                 <div class="room-card-s">
                   <div class="room-row-s">
@@ -791,12 +874,79 @@
                 </div>
                 <div style="background:#F5F3FF;border-radius:10px;padding:8px 10px;border:1px solid #DDD6FE;">
                   <div style="font-size:7px;font-weight:700;color:var(--purple);text-transform:uppercase;margin-bottom:3px;">Leietakers kommentar</div>
-                  <div style="font-size:7.5px;color:#4C1D95;line-height:1.4;">Bekrefter at alt stemmer. Ingen ytterligere merknader.</div>
+                  <div style="font-size:7.5px;color:#4C1D95;line-height:1.4;">Bekrefter at alt stemmer.</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+
+        <!-- Utflyttingsrapport -->
+        <div class="phone" style="width:200px;margin-top:32px;">
+          <div class="phone-inner" style="height:470px;">
+            <div class="phone-notch"><div class="phone-notch-pill"></div></div>
+            <div class="screen">
+              <div class="screen-header" style="flex-direction:row;justify-content:space-between;align-items:center;">
+                <ion-icon name="chevron-back-outline" style="font-size:14px;color:var(--blue)"></ion-icon>
+                <div style="font-size:8.5px;font-weight:700;color:var(--dark);">Utflyttingsrapport</div>
+                <div></div>
+              </div>
+              <div class="screen-body">
+                <div style="background:#FEF3C7;border-radius:11px;padding:9px 10px;display:flex;align-items:center;gap:7px;">
+                  <ion-icon name="time-outline" style="font-size:15px;color:var(--amber);flex-shrink:0"></ion-icon>
+                  <div>
+                    <div style="font-size:8px;font-weight:700;color:#92400E;">Sendt til leietaker</div>
+                    <div style="font-size:7px;color:#6B7280;">Venter på signering</div>
+                  </div>
+                </div>
+                <div class="room-card-s">
+                  <div class="room-row-s">
+                    <div class="room-name-s"><ion-icon name="restaurant-outline"></ion-icon>Kjøkken</div>
+                    <div class="cond cond-g">Bra</div>
+                  </div>
+                  <div style="display:flex;gap:4px;margin-top:5px;">
+                    <div style="width:26px;height:20px;background:#F3F4F6;border-radius:4px;display:flex;align-items:center;justify-content:center;"><ion-icon name="image-outline" style="font-size:10px;color:#9CA3AF;"></ion-icon></div>
+                  </div>
+                </div>
+                <div class="room-card-s">
+                  <div class="room-row-s">
+                    <div class="room-name-s"><ion-icon name="water-outline"></ion-icon>Bad</div>
+                    <div class="cond cond-p">Dårlig</div>
+                  </div>
+                  <div class="room-note-s">Fuktskade under servant.</div>
+                  <div style="display:flex;gap:4px;margin-top:5px;">
+                    <div style="width:26px;height:20px;background:#F3F4F6;border-radius:4px;display:flex;align-items:center;justify-content:center;"><ion-icon name="image-outline" style="font-size:10px;color:#9CA3AF;"></ion-icon></div>
+                    <div style="width:26px;height:20px;background:#F3F4F6;border-radius:4px;display:flex;align-items:center;justify-content:center;"><ion-icon name="image-outline" style="font-size:10px;color:#9CA3AF;"></ion-icon></div>
+                  </div>
+                </div>
+                <div class="room-card-s">
+                  <div class="room-row-s">
+                    <div class="room-name-s"><ion-icon name="layers-outline"></ion-icon>Gulv</div>
+                    <div class="cond cond-o">Ok</div>
+                  </div>
+                  <div class="room-note-s">Noe slitasje ved inngang.</div>
+                </div>
+                <div class="room-card-s">
+                  <div class="room-row-s">
+                    <div class="room-name-s"><ion-icon name="square-outline"></ion-icon>Vegger</div>
+                    <div class="cond cond-g">Bra</div>
+                  </div>
+                </div>
+                <div class="room-card-s">
+                  <div class="room-row-s">
+                    <div class="room-name-s"><ion-icon name="ellipsis-horizontal-outline"></ion-icon>Annet</div>
+                    <div class="cond cond-g">Bra</div>
+                  </div>
+                </div>
+                <div style="background:#FEF2F2;border-radius:10px;padding:8px 10px;border:1px solid #FECACA;">
+                  <div style="font-size:7px;font-weight:700;color:var(--red);text-transform:uppercase;margin-bottom:3px;">Leietakers kommentar</div>
+                  <div style="font-size:7.5px;color:#991B1B;line-height:1.4;">Fuktskaden var der ved innflytting.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
     </div>
   </div>
@@ -881,10 +1031,82 @@
   </div>
 </section>
 
+<!-- PRISER -->
+<section id="priser" style="background:#fff;">
+  <div class="section-header">
+    <div class="section-tag">Priser</div>
+    <h2>Enkelt og forutsigbart.</h2>
+    <p>To planer. Alt inkludert. Ingen skjulte kostnader.</p>
+  </div>
+  <div style="max-width:800px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+
+    <!-- Plan 1 -->
+    <div style="background:var(--bg);border-radius:20px;padding:36px;border:1.5px solid #E5E7EB;text-align:center;display:flex;flex-direction:column;">
+      <div style="font-size:13px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:16px;">Standard</div>
+      <div style="display:flex;align-items:flex-end;justify-content:center;gap:4px;margin-bottom:8px;">
+        <span style="font-size:52px;font-weight:800;color:var(--dark);line-height:1;">99</span>
+        <span style="font-size:20px;font-weight:600;color:var(--gray);margin-bottom:10px;">kr/mnd</span>
+      </div>
+      <p style="color:var(--gray);font-size:14px;margin-bottom:24px;">Opptil 30 utleieenheter.</p>
+      <div style="text-align:left;margin-bottom:28px;flex:1;">
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #E5E7EB;font-size:14px;color:#374151;">
+          <ion-icon name="checkmark-circle" style="color:var(--green);font-size:18px;flex-shrink:0;"></ion-icon> Opptil 30 enheter
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #E5E7EB;font-size:14px;color:#374151;">
+          <ion-icon name="checkmark-circle" style="color:var(--green);font-size:18px;flex-shrink:0;"></ion-icon> Meldinger og feilmeldinger
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #E5E7EB;font-size:14px;color:#374151;">
+          <ion-icon name="checkmark-circle" style="color:var(--green);font-size:18px;flex-shrink:0;"></ion-icon> Inn- og utflyttingsrapporter
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #E5E7EB;font-size:14px;color:#374151;">
+          <ion-icon name="checkmark-circle" style="color:var(--green);font-size:18px;flex-shrink:0;"></ion-icon> Dokumentdeling og utgiftssporing
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;font-size:14px;color:#374151;">
+          <ion-icon name="checkmark-circle" style="color:var(--green);font-size:18px;flex-shrink:0;"></ion-icon> Leiehistorikk og fellesvarsler
+        </div>
+      </div>
+      <a href="#cta" class="btn-primary" style="display:block;text-align:center;">Kom i gang</a>
+      <p style="font-size:12px;color:var(--gray);margin-top:12px;">Ingen bindingstid. Avslutt når du vil.</p>
+    </div>
+
+    <!-- Plan 2 -->
+    <div style="background:var(--bg);border-radius:20px;padding:36px;border:2px solid var(--blue);text-align:center;display:flex;flex-direction:column;position:relative;overflow:hidden;">
+      <div style="position:absolute;top:16px;right:16px;background:var(--blue);color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:100px;">Stor portefølje</div>
+      <div style="font-size:13px;font-weight:700;color:var(--blue);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:16px;">Pro</div>
+      <div style="display:flex;align-items:flex-end;justify-content:center;gap:4px;margin-bottom:8px;">
+        <span style="font-size:52px;font-weight:800;color:var(--dark);line-height:1;">199</span>
+        <span style="font-size:20px;font-weight:600;color:var(--gray);margin-bottom:10px;">kr/mnd</span>
+      </div>
+      <p style="color:var(--gray);font-size:14px;margin-bottom:24px;">Over 30 utleieenheter.</p>
+      <div style="text-align:left;margin-bottom:28px;flex:1;">
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #E5E7EB;font-size:14px;color:#374151;">
+          <ion-icon name="checkmark-circle" style="color:var(--green);font-size:18px;flex-shrink:0;"></ion-icon> Ubegrenset antall enheter
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #E5E7EB;font-size:14px;color:#374151;">
+          <ion-icon name="checkmark-circle" style="color:var(--green);font-size:18px;flex-shrink:0;"></ion-icon> Meldinger og feilmeldinger
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #E5E7EB;font-size:14px;color:#374151;">
+          <ion-icon name="checkmark-circle" style="color:var(--green);font-size:18px;flex-shrink:0;"></ion-icon> Inn- og utflyttingsrapporter
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #E5E7EB;font-size:14px;color:#374151;">
+          <ion-icon name="checkmark-circle" style="color:var(--green);font-size:18px;flex-shrink:0;"></ion-icon> Dokumentdeling og utgiftssporing
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;font-size:14px;color:#374151;">
+          <ion-icon name="checkmark-circle" style="color:var(--green);font-size:18px;flex-shrink:0;"></ion-icon> Leiehistorikk og fellesvarsler
+        </div>
+      </div>
+      <a href="#cta" class="btn-primary" style="display:block;text-align:center;">Kom i gang</a>
+      <p style="font-size:12px;color:var(--gray);margin-top:12px;">Ingen bindingstid. Avslutt når du vil.</p>
+    </div>
+
+  </div>
+</section>
+
+
 <!-- CTA -->
 <section class="cta-section" id="cta">
   <h2>Klar for en enklere<br />utleie-hverdag?</h2>
-  <p>Gratis å laste ned. Ingen bindingstid. Kom i gang på under 3 minutter.</p>
+  <p>Fra 99 kr/mnd. Ingen bindingstid. Kom i gang på under 3 minutter.</p>
   <div class="cta-buttons">
     <a href="#" class="btn-white">
       <ion-icon name="logo-apple" style="color:var(--dark)"></ion-icon>
@@ -895,7 +1117,7 @@
       Last ned for Android
     </a>
   </div>
-  <div class="cta-note">Tilgjengelig i App Store og Google Play · Gratis</div>
+  <div class="cta-note">Tilgjengelig i App Store og Google Play · Fra 99 kr/mnd</div>
 </section>
 
 <!-- FOOTER -->
@@ -908,7 +1130,7 @@
     <div class="footer-col">
       <h4>Produkt</h4>
       <a href="#">Funksjoner</a>
-      <a href="#">Priser</a>
+      <a href="#priser">Priser</a>
       <a href="#">Last ned</a>
       <a href="#">Nyheter</a>
     </div>
@@ -922,16 +1144,65 @@
     <div class="footer-col">
       <h4>Selskap</h4>
       <a href="#">Om oss</a>
-      <a href="#">Personvern</a>
+      <a href="#" onclick="event.preventDefault();document.getElementById('pvOverlay').classList.add('open')">Personvern</a>
       <a href="#">Vilkår</a>
       <a href="#">Kontakt</a>
     </div>
   </div>
   <div class="footer-bottom">
-    <span>© 2025 BoligDialog AS · Alle rettigheter forbeholdt</span>
-    <span>Laget med omhu i Norge</span>
+    <span>© 2026 BoligDialog AS · Alle rettigheter forbeholdt</span>
   </div>
 </footer>
+
+<!-- PERSONVERN MODAL -->
+<div class="pv-overlay" id="pvOverlay">
+  <div class="pv-modal">
+    <button class="pv-close" onclick="document.getElementById('pvOverlay').classList.remove('open')">✕</button>
+    <h2>Personvernerklæring</h2>
+    <p class="pv-date">Sist oppdatert: juni 2026</p>
+
+    <h3>1. Behandlingsansvarlig</h3>
+    <p>BoligDialog AS er behandlingsansvarlig for personopplysningene som behandles i appen og på denne nettsiden. Kontakt oss på <strong>kontakt@boligdialog.no</strong> ved spørsmål om personvern.</p>
+
+    <h3>2. Hvilke opplysninger samler vi inn?</h3>
+    <p>Vi samler inn følgende opplysninger når du bruker BoligDialog:</p>
+    <ul>
+      <li>Navn og e-postadresse (ved registrering)</li>
+      <li>Rolle (utleier eller leietaker)</li>
+      <li>Profilbilde (valgfritt)</li>
+      <li>Innhold du selv oppretter: meldinger, feilmeldinger, dokumenter, inspeksjonsrapporter og utgifter</li>
+      <li>Bilder lastet opp i forbindelse med feilmeldinger og rapporter</li>
+      <li>Push-token for varsler (valgfritt)</li>
+    </ul>
+
+    <h3>3. Formål og rettslig grunnlag</h3>
+    <p>Opplysningene brukes til å:</p>
+    <ul>
+      <li>Levere og drifte tjenesten (avtaleoppfyllelse, jf. GDPR art. 6(1)(b))</li>
+      <li>Sende push-varsler og e-poster knyttet til leieforholdet (berettiget interesse)</li>
+      <li>Oppfylle eventuelle lovpålagte plikter</li>
+    </ul>
+
+    <h3>4. Lagring og sikkerhet</h3>
+    <p>Data lagres hos <strong>Supabase</strong> på servere i EU (Frankfurt). All kommunikasjon er kryptert med TLS. Vi benytter Row Level Security (RLS) i databasen, slik at hver bruker kun har tilgang til egne data.</p>
+
+    <h3>5. Deling med tredjeparter</h3>
+    <p>Vi deler ikke personopplysninger med tredjeparter for kommersielle formål. Underleverandører som benyttes:</p>
+    <ul>
+      <li><strong>Supabase Inc.</strong> — database, autentisering og fillagring</li>
+      <li><strong>Expo / Expo Go</strong> — push-varsler</li>
+    </ul>
+
+    <h3>6. Dine rettigheter</h3>
+    <p>Du har rett til innsyn, retting, sletting og dataportabilitet. Du kan også trekke tilbake samtykke og klage til <strong>Datatilsynet</strong>. Send forespørsel til <strong>kontakt@boligdialog.no</strong>.</p>
+
+    <h3>7. Sletting av data</h3>
+    <p>Du kan slette kontoen din i appen under Profil → Slett konto. All personlig informasjon slettes innen 30 dager. Historiske leiedata (uten personidentifiserende informasjon) kan beholdes for statistikkformål.</p>
+
+    <h3>8. Informasjonskapsler</h3>
+    <p>Denne nettsiden bruker ingen sporingscookies. Vi bruker kun teknisk nødvendige cookies for å holde deg innlogget i appen.</p>
+  </div>
+</div>
 
 <script>
   const observer = new IntersectionObserver((entries) => {
@@ -942,6 +1213,10 @@
       }
     });
   }, { threshold: 0.1 });
+
+  document.getElementById('pvOverlay').addEventListener('click', function(e) {
+    if (e.target === this) this.classList.remove('open');
+  });
 
   document.querySelectorAll('.feature-card, .step').forEach(el => {
     el.style.opacity = '0';

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Image, View } from 'react-native';
+import { Image, View, useWindowDimensions } from 'react-native';
 import { Tabs } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GridIcon, BuildingIcon, WrenchIcon, ChatIcon, UserIcon } from '@/components/Icon';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
@@ -20,6 +21,9 @@ const GRAY = '#6B7280';
 
 export default function LandlordLayout() {
   const { user } = useAuthStore();
+  const insets = useSafeAreaInsets();
+  const { height: screenHeight } = useWindowDimensions();
+  const headerHeight = screenHeight < 700 ? 120 : 160;
   const [unreadCount, setUnreadCount] = useState(0);
 
   const fetchUnread = async () => {
@@ -47,17 +51,19 @@ export default function LandlordLayout() {
         headerShown: true,
         headerTitle: () => null,
         headerBackground: () => <LogoBg />,
-        headerStyle: { backgroundColor: '#F5F7FA', height: 160 },
+        headerStyle: { backgroundColor: '#F5F7FA', height: headerHeight },
         headerShadowVisible: false,
         tabBarActiveTintColor: BLUE,
         tabBarInactiveTintColor: GRAY,
         tabBarStyle: {
           backgroundColor: '#FFFFFF',
           borderTopColor: '#E5E7EB',
-          paddingBottom: 4,
-          height: 60,
+          paddingBottom: insets.bottom || 8,
+          paddingTop: 8,
+          height: 56 + (insets.bottom || 8),
         },
         tabBarLabelStyle: { fontSize: 11, fontWeight: '500' },
+        tabBarIconStyle: { marginBottom: 2 },
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'Hjem', tabBarIcon: ({ focused }) => <GridIcon color={focused ? BLUE : GRAY} /> }} />

@@ -1,16 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Modal, TextInput, StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Clipboard from 'expo-clipboard';
-import * as DocumentPicker from 'expo-document-picker';
-import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system';
+import { DocsModal } from '@/components/DocsModal';
+import { ExpensesModal } from '@/components/ExpensesModal';
+import { UnitDetailSheet, UnitSheetData } from '@/components/UnitDetailSheet';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
-import { PropertyRow, UnitRow, ExpenseRow, ExpenseCategory, DocumentRow, DocumentCategory, LeaseRow } from '@/lib/types';
+import { PropertyRow, UnitRow, DocumentCategory, LeaseRow } from '@/lib/types';
 import { Ionicons } from '@expo/vector-icons';
+
 
 const DOC_CATEGORIES: { key: DocumentCategory; label: string; icon: string; color: string }[] = [
   { key: 'contract',  label: 'Kontrakt',   icon: 'document-text-outline', color: '#1A56A0' },
@@ -19,7 +19,8 @@ const DOC_CATEGORIES: { key: DocumentCategory; label: string; icon: string; colo
   { key: 'other',     label: 'Annet',      icon: 'attach-outline',         color: '#6B7280' },
 ];
 
-function isImage(name: string) { return /\.(jpg|jpeg|png|gif|webp)$/i.test(name); }
+function isImage(name: string) { return /\.(jpg|jpeg|png|gif|webp|heic|heif|bmp|tiff|tif|svg)$/i.test(name); }
+function isPdf(name: string) { return /\.pdf$/i.test(name); }
 
 function fmtDate(d: string) {
   return new Date(d).toLocaleDateString('nb-NO', { day: '2-digit', month: '2-digit', year: 'numeric' });
@@ -66,7 +67,7 @@ export default function PropertyDetailScreen() {
   const [unitForm, setUnitForm] = useState({ unit_number: '', floor: '', size_sqm: '', monthly_rent: '' });
 
   const [showInviteModal, setShowInviteModal] = useState(false);
-  const [selectedUnit, setSelectedUnit] = useState<UnitWithInvite | null>(null);
+  const [inviteUnit, setInviteUnit] = useState<UnitWithInvite | null>(null);
   const [inviteEmail, setInviteEmail] = useState('');
   const [sendingInvite, setSendingInvite] = useState(false);
 
@@ -85,164 +86,24 @@ export default function PropertyDetailScreen() {
 
   // Leases
   const [leases, setLeases] = useState<LeaseWithTenant[]>([]);
+
+  // Unit detail sheet
+  const [selectedUnit, setSelectedUnit] = useState<UnitSheetData | null>(null);
+
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [historyUnit, setHistoryUnit] = useState<UnitWithInvite | null>(null);
   const [endingLease, setEndingLease] = useState(false);
 
   // Documents
   const [showDocsModal, setShowDocsModal] = useState(false);
-  const [docsUnit, setDocsUnit] = useState<UnitWithInvite | null>(null);
-  const [docs, setDocs] = useState<DocumentRow[]>([]);
-  const [loadingDocs, setLoadingDocs] = useState(false);
-  const [uploadingDoc, setUploadingDoc] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [previewVisible, setPreviewVisible] = useState(false);
-  const [pendingDoc, setPendingDoc] = useState<{ uri: string; name: string; mimeType: string } | null>(null);
-  const [showDocCatModal, setShowDocCatModal] = useState(false);
-
-  const fetchDocs = async (uid: string) => {
-    const { data } = await supabase.from('documents').select('*').eq('unit_id', uid).order('created_at', { ascending: false });
-    setDocs((data as DocumentRow[]) ?? []);
-  };
-
-  const openDocs = async (unit: UnitWithInvite) => {
-    setDocsUnit(unit);
-    setShowDocsModal(true);
-    setLoadingDocs(true);
-    await fetchDocs(unit.id);
-    setLoadingDocs(false);
-  };
-
-  const uploadWithCategory = async (category: DocumentCategory) => {
-    if (!pendingDoc || !docsUnit) return;
-    setShowDocCatModal(false);
-    setUploadingDoc(true);
-    try {
-      const base64 = await FileSystem.readAsStringAsync(pendingDoc.uri, { encoding: FileSystem.EncodingType.Base64 });
-      const arrayBuffer = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
-      const path = `${user!.id}/${docsUnit.id}/${Date.now()}_${pendingDoc.name}`;
-      const { error: upErr } = await supabase.storage.from('documents').upload(path, arrayBuffer, { contentType: pendingDoc.mimeType });
-      if (upErr) throw upErr;
-      await supabase.from('documents').insert({
-        unit_id: docsUnit.id, uploaded_by: user!.id,
-        name: pendingDoc.name, category,
-        storage_path: path, file_size: arrayBuffer.length,
-      });
-      await fetchDocs(docsUnit.id);
-    } catch (e: any) {
-      Alert.alert('Feil', e.message ?? 'Kunne ikke laste opp.');
-    } finally {
-      setUploadingDoc(false);
-      setPendingDoc(null);
-    }
-  };
-
-  const handlePickDoc = async () => {
-    const result = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
-    if (result.canceled || !result.assets[0]) return;
-    const a = result.assets[0];
-    setPendingDoc({ uri: a.uri, name: a.name, mimeType: a.mimeType ?? 'application/octet-stream' });
-    setShowDocCatModal(true);
-  };
-
-  const handlePickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') { Alert.alert('Tillatelse kreves', 'Gi tilgang til bildebiblioteket i innstillinger.'); return; }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, quality: 0.8 });
-    if (result.canceled || !result.assets[0]) return;
-    const a = result.assets[0];
-    setPendingDoc({ uri: a.uri, name: a.fileName ?? `bilde_${Date.now()}.jpg`, mimeType: a.mimeType ?? 'image/jpeg' });
-    setShowDocCatModal(true);
-  };
-
-  const handleDocPress = async (doc: DocumentRow) => {
-    const { data, error } = await supabase.storage.from('documents').createSignedUrl(doc.storage_path, 60);
-    if (error || !data) { Alert.alert('Feil', 'Kunne ikke åpne filen.'); return; }
-    if (isImage(doc.name)) {
-      setPreviewUrl(data.signedUrl);
-      setPreviewVisible(true);
-    } else {
-      Alert.alert(doc.name, `Størrelse: ${(doc.file_size / 1024).toFixed(1)} KB\nKategori: ${DOC_CATEGORIES.find(c => c.key === doc.category)?.label}`);
-    }
-  };
-
-  const handleDeleteDoc = (doc: DocumentRow) => {
-    Alert.alert('Slett dokument', `Vil du slette "${doc.name}"? Dette kan ikke angres.`, [
-      { text: 'Avbryt', style: 'cancel' },
-      { text: 'Slett', style: 'destructive', onPress: async () => {
-        await supabase.storage.from('documents').remove([doc.storage_path]);
-        await supabase.from('documents').delete().eq('id', doc.id);
-        setDocs(prev => prev.filter(d => d.id !== doc.id));
-      }},
-    ]);
-  };
-
-  const showUploadOptions = () => {
-    Alert.alert('Last opp', 'Velg type', [
-      { text: 'Bilde fra bibliotek', onPress: handlePickImage },
-      { text: 'Fil / dokument', onPress: handlePickDoc },
-      { text: 'Avbryt', style: 'cancel' },
-    ]);
-  };
+  const [docsUnitId, setDocsUnitId]       = useState('');
+  const [docsUnitNum, setDocsUnitNum]     = useState('');
 
   // Expenses
-  const [showExpensesModal, setShowExpensesModal] = useState(false);
-  const [expenseUnit, setExpenseUnit] = useState<UnitWithInvite | null>(null);
-  const [expenses, setExpenses] = useState<ExpenseRow[]>([]);
-  const [loadingExpenses, setLoadingExpenses] = useState(false);
-  const [showAddExpenseForm, setShowAddExpenseForm] = useState(false);
-  const [savingExpense, setSavingExpense] = useState(false);
-  const [expenseForm, setExpenseForm] = useState({ amount: '', category: 'maintenance' as ExpenseCategory, description: '', date: new Date() });
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showExpensesModal2, setShowExpensesModal2] = useState(false);
+  const [expUnitId, setExpUnitId]   = useState('');
+  const [expUnitNum, setExpUnitNum] = useState('');
 
-  const EXPENSE_CATEGORIES: { key: ExpenseCategory; label: string; icon: string; color: string }[] = [
-    { key: 'maintenance', label: 'Vedlikehold', icon: 'construct-outline', color: '#3B82F6' },
-    { key: 'repair', label: 'Reparasjon', icon: 'hammer-outline', color: '#F59E0B' },
-    { key: 'utilities', label: 'Strøm/vann', icon: 'flash-outline', color: '#10B981' },
-    { key: 'insurance', label: 'Forsikring', icon: 'shield-outline', color: '#8B5CF6' },
-    { key: 'tax', label: 'Avgifter/skatt', icon: 'receipt-outline', color: '#EF4444' },
-    { key: 'other', label: 'Annet', icon: 'ellipsis-horizontal-outline', color: '#6B7280' },
-  ];
-
-  const openExpenses = async (unit: UnitWithInvite) => {
-    setExpenseUnit(unit);
-    setShowAddExpenseForm(false);
-    setShowExpensesModal(true);
-    setLoadingExpenses(true);
-    const { data } = await supabase.from('expenses').select('*').eq('unit_id', unit.id).order('date', { ascending: false });
-    setExpenses((data as ExpenseRow[]) ?? []);
-    setLoadingExpenses(false);
-  };
-
-  const handleSaveExpense = async () => {
-    if (!expenseForm.amount || isNaN(parseFloat(expenseForm.amount))) { Alert.alert('Feil', 'Skriv inn et gyldig beløp.'); return; }
-    if (!expenseForm.description.trim()) { Alert.alert('Feil', 'Beskrivelse er påkrevd.'); return; }
-    setSavingExpense(true);
-    const { error } = await supabase.from('expenses').insert({
-      unit_id: expenseUnit!.id,
-      landlord_id: user!.id,
-      amount: parseFloat(expenseForm.amount),
-      category: expenseForm.category,
-      description: expenseForm.description.trim(),
-      date: expenseForm.date.toISOString().split('T')[0],
-    });
-    setSavingExpense(false);
-    if (error) { Alert.alert('Feil', error.message); return; }
-    setShowAddExpenseForm(false);
-    setExpenseForm({ amount: '', category: 'maintenance', description: '', date: new Date() });
-    const { data } = await supabase.from('expenses').select('*').eq('unit_id', expenseUnit!.id).order('date', { ascending: false });
-    setExpenses((data as ExpenseRow[]) ?? []);
-  };
-
-  const handleDeleteExpense = (expense: ExpenseRow) => {
-    Alert.alert('Slett utgift', `Vil du slette "${expense.description}"? Dette kan ikke angres.`, [
-      { text: 'Avbryt', style: 'cancel' },
-      { text: 'Slett utgift', style: 'destructive', onPress: async () => {
-        await supabase.from('expenses').delete().eq('id', expense.id);
-        setExpenses(prev => prev.filter(e => e.id !== expense.id));
-      }},
-    ]);
-  };
 
   const fetchData = useCallback(async () => {
     if (!id) return;
@@ -349,22 +210,21 @@ export default function PropertyDetailScreen() {
 
   const handleSendInvite = async () => {
     if (!inviteEmail.trim() || !inviteEmail.includes('@')) { Alert.alert('Feil', 'Skriv inn en gyldig e-postadresse.'); return; }
-    if (!selectedUnit) return;
+    if (!inviteUnit) return;
     setSendingInvite(true);
-    const token = Math.random().toString(36).substring(2) + Date.now().toString(36);
+    const token = String(Math.floor(100000 + Math.random() * 900000));
     const { error } = await supabase.from('invitations').insert({
-      unit_id: selectedUnit.id, landlord_id: user!.id,
+      unit_id: inviteUnit.id, landlord_id: user!.id,
       email: inviteEmail.trim().toLowerCase(), token, status: 'pending',
       expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     });
     setSendingInvite(false);
     if (error) { Alert.alert('Feil', error.message); return; }
-    const link = `boligdialog://invite/${token}`;
-    await Clipboard.setStringAsync(link);
-    Alert.alert('Invitasjon opprettet!', `Lenken er kopiert til utklippstavlen:\n\n${link}`, [{ text: 'OK' }]);
+    await Clipboard.setStringAsync(token);
+    Alert.alert('Invitasjonskode opprettet!', `Gi leietaker denne 6-sifrede koden:\n\n${token}\n\nKoden er kopiert til utklippstavlen og er gyldig i 7 dager.`, [{ text: 'OK' }]);
     setShowInviteModal(false);
     setInviteEmail('');
-    setSelectedUnit(null);
+    setInviteUnit(null);
     fetchData();
   };
 
@@ -427,6 +287,44 @@ export default function PropertyDetailScreen() {
     return { pending: { label: 'Invitert', color: '#F59E0B' }, accepted: { label: 'Aktiv leietaker', color: '#10B981' }, expired: { label: 'Utløpt', color: '#EF4444' } }[status];
   };
 
+  const openUnitDetail = useCallback((item: UnitWithInvite) => {
+    const activeLease = leases.find(l => l.unit_id === item.id && !l.ended_at);
+    const pastLeases  = leases.filter(l => l.unit_id === item.id && !!l.ended_at);
+    setSelectedUnit({
+      id: item.id,
+      unit_number: item.unit_number,
+      floor: item.floor,
+      size_sqm: item.size_sqm,
+      monthly_rent: item.monthly_rent,
+      tenant_id: item.tenant_id,
+      tenant_name: activeLease?.tenant_name,
+      tenant_email: activeLease?.tenant_email,
+      lease_started: activeLease?.started_at,
+      invite_status: item.invite_status,
+      has_past_leases: pastLeases.length > 0,
+    });
+  }, [leases]);
+
+  const renderUnit = useCallback(({ item }: { item: UnitWithInvite }) => {
+    const activeLease = leases.find(l => l.unit_id === item.id && !l.ended_at);
+    return (
+      <TouchableOpacity style={s.unitRow} onPress={() => openUnitDetail(item)} activeOpacity={0.7}>
+        <Text style={s.unitNumber}>{item.unit_number}</Text>
+        <View style={s.unitRowRight}>
+          {activeLease ? (
+            <View style={s.tenantDot} />
+          ) : item.invite_status === 'pending' ? (
+            <View style={[s.tenantDot, { backgroundColor: '#F59E0B' }]} />
+          ) : null}
+          {item.monthly_rent != null
+            ? <Text style={s.unitRent}>{Number(item.monthly_rent).toLocaleString('nb-NO')} kr/mnd</Text>
+            : <Text style={s.unitRentEmpty}>Ingen pris</Text>}
+          <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+        </View>
+      </TouchableOpacity>
+    );
+  }, [leases, openUnitDetail]);
+
   if (loading) return <ActivityIndicator style={{ flex: 1 }} color={BLUE} />;
 
   return (
@@ -478,64 +376,7 @@ export default function PropertyDetailScreen() {
             <Text style={s.emptyText}>Ingen enheter ennå. Legg til en enhet.</Text>
           </View>
         }
-        renderItem={({ item }) => {
-          const st = statusLabel(item.invite_status);
-          const activeLease = leases.find(l => l.unit_id === item.id && !l.ended_at);
-          const pastLeases = leases.filter(l => l.unit_id === item.id && l.ended_at);
-          return (
-            <View style={s.unitCard}>
-              <View style={s.unitRow}>
-                <View style={s.unitInfo}>
-                  <Text style={s.unitNumber}>Enhet {item.unit_number}</Text>
-                  {item.monthly_rent != null && <Text style={s.unitRent}>{Number(item.monthly_rent).toLocaleString('nb-NO')} kr/mnd</Text>}
-                  {item.size_sqm != null && <Text style={s.unitDetail}>{item.size_sqm} m²{item.floor != null ? ` · Etasje ${item.floor}` : ''}</Text>}
-                  {activeLease ? (
-                    <View style={s.activeTenantRow}>
-                      <Ionicons name="person-circle-outline" size={15} color="#10B981" />
-                      <Text style={s.activeTenantName}>{activeLease.tenant_name}</Text>
-                      <Text style={s.activeTenantSince}>· fra {fmtDate(activeLease.started_at)}</Text>
-                    </View>
-                  ) : st ? (
-                    <View style={[s.badge, { backgroundColor: st.color + '22' }]}><Text style={[s.badgeText, { color: st.color }]}>{st.label}</Text></View>
-                  ) : null}
-                </View>
-                <View style={s.unitActions}>
-                  <TouchableOpacity style={s.iconBtn} onPress={() => openDocs(item)}>
-                    <Ionicons name="document-text-outline" size={18} color="#7C3AED" />
-                  </TouchableOpacity>
-                  <TouchableOpacity style={s.iconBtn} onPress={() => openExpenses(item)}>
-                    <Ionicons name="wallet-outline" size={18} color="#10B981" />
-                  </TouchableOpacity>
-                  <TouchableOpacity style={s.iconBtn} onPress={() => router.push({ pathname: '/(landlord)/inspection', params: { unit_id: item.id, unit_number: item.unit_number } } as any)}>
-                    <Ionicons name="clipboard-outline" size={18} color="#F59E0B" />
-                  </TouchableOpacity>
-                  {pastLeases.length > 0 && (
-                    <TouchableOpacity style={s.iconBtn} onPress={() => { setHistoryUnit(item); setShowHistoryModal(true); }}>
-                      <Ionicons name="time-outline" size={18} color="#6B7280" />
-                    </TouchableOpacity>
-                  )}
-                  {!activeLease && (
-                    <TouchableOpacity style={s.iconBtn} onPress={() => { setSelectedUnit(item); setShowInviteModal(true); }}>
-                      <Ionicons name="mail-outline" size={18} color={BLUE} />
-                    </TouchableOpacity>
-                  )}
-                  <TouchableOpacity style={s.iconBtn} onPress={() => {
-                    setSettingsUnit(item);
-                    setUnitForm({
-                      unit_number: item.unit_number,
-                      floor: item.floor != null ? String(item.floor) : '',
-                      size_sqm: item.size_sqm != null ? String(item.size_sqm) : '',
-                      monthly_rent: item.monthly_rent != null ? String(item.monthly_rent) : '',
-                    });
-                    setShowUnitSettingsModal(true);
-                  }}>
-                    <Ionicons name="settings-outline" size={18} color="#9CA3AF" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          );
-        }}
+        renderItem={renderUnit}
       />
 
       {/* Add / Edit Unit Modal */}
@@ -601,77 +442,30 @@ export default function PropertyDetailScreen() {
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* Documents Modal */}
-      <Modal visible={showDocsModal} animationType="slide" presentationStyle="pageSheet">
-        <SafeAreaView style={s.modal}>
-          <View style={s.modalHeader}>
-            <TouchableOpacity onPress={() => setShowDocsModal(false)}><Text style={s.cancel}>Lukk</Text></TouchableOpacity>
-            <Text style={s.modalTitle}>Dokumenter – Enhet {docsUnit?.unit_number}</Text>
-            <TouchableOpacity onPress={showUploadOptions} disabled={uploadingDoc}>
-              {uploadingDoc ? <ActivityIndicator color={BLUE} size="small" /> : <Text style={s.saveText}>+ Last opp</Text>}
-            </TouchableOpacity>
-          </View>
+      {/* Unit detail sheet — opens when tapping a unit row */}
+      <UnitDetailSheet
+        unit={selectedUnit}
+        onClose={() => setSelectedUnit(null)}
+        onRefresh={fetchData}
+        onOpenDocs={(id, num) => { setDocsUnitId(id); setDocsUnitNum(num); setShowDocsModal(true); }}
+        onOpenExpenses={(id, num) => { setExpUnitId(id); setExpUnitNum(num); setShowExpensesModal2(true); }}
+      />
 
-          {loadingDocs ? <ActivityIndicator style={{ marginTop: 40 }} color={BLUE} /> : (
-            <ScrollView contentContainerStyle={s.modalBody}>
-              {docs.length === 0 ? (
-                <View style={s.empty}>
-                  <Ionicons name="document-text-outline" size={40} color="#D1D5DB" />
-                  <Text style={s.emptyText}>Ingen dokumenter lastet opp ennå.</Text>
-                </View>
-              ) : docs.map(doc => {
-                const cat = DOC_CATEGORIES.find(c => c.key === doc.category) ?? DOC_CATEGORIES[3];
-                return (
-                  <TouchableOpacity key={doc.id} style={s.expenseCard} onPress={() => handleDocPress(doc)}>
-                    <View style={[s.expenseCatIcon, { backgroundColor: cat.color + '18' }]}>
-                      <Ionicons name={(isImage(doc.name) ? 'image-outline' : cat.icon) as any} size={18} color={cat.color} />
-                    </View>
-                    <View style={s.expenseInfo}>
-                      <Text style={s.expenseDesc} numberOfLines={1}>{doc.name}</Text>
-                      <Text style={s.expenseMeta}>{cat.label} · {(doc.file_size / 1024).toFixed(1)} KB · {new Date(doc.created_at).toLocaleDateString('nb-NO')}</Text>
-                    </View>
-                    <TouchableOpacity onPress={() => handleDeleteDoc(doc)} style={{ padding: 4 }}>
-                      <Ionicons name="trash-outline" size={16} color="#EF4444" />
-                    </TouchableOpacity>
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          )}
-        </SafeAreaView>
-      </Modal>
+      {/* Docs modal */}
+      <DocsModal
+        visible={showDocsModal}
+        onClose={() => setShowDocsModal(false)}
+        unitId={docsUnitId}
+        unitNumber={docsUnitNum}
+      />
 
-      {/* Image preview */}
-      <Modal visible={previewVisible} transparent animationType="fade">
-        <TouchableOpacity style={s.overlay} activeOpacity={1} onPress={() => setPreviewVisible(false)}>
-          {previewUrl && <Image source={{ uri: previewUrl }} style={s.previewImg} resizeMode="contain" />}
-          <TouchableOpacity style={s.closePreview} onPress={() => setPreviewVisible(false)}>
-            <Ionicons name="close-circle" size={36} color="#fff" />
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
-
-      {/* Document category picker */}
-      <Modal visible={showDocCatModal} transparent animationType="slide">
-        <TouchableOpacity style={s.backdrop} activeOpacity={1} onPress={() => { setShowDocCatModal(false); setPendingDoc(null); }}>
-          <View style={s.sheet}>
-            <View style={s.sheetHandle} />
-            <Text style={s.sheetTitle}>Velg kategori</Text>
-            {pendingDoc && <Text style={s.sheetFile} numberOfLines={1}>{pendingDoc.name}</Text>}
-            <View style={s.catList}>
-              {DOC_CATEGORIES.map(cat => (
-                <TouchableOpacity key={cat.key} style={s.catRow} onPress={() => uploadWithCategory(cat.key)}>
-                  <View style={[s.catIcon, { backgroundColor: cat.color + '18' }]}>
-                    <Ionicons name={cat.icon as any} size={20} color={cat.color} />
-                  </View>
-                  <Text style={s.catLabel}>{cat.label}</Text>
-                  <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        </TouchableOpacity>
-      </Modal>
+      {/* Expenses modal */}
+      <ExpensesModal
+        visible={showExpensesModal2}
+        onClose={() => setShowExpensesModal2(false)}
+        unitId={expUnitId}
+        unitNumber={expUnitNum}
+      />
 
       {/* Unit Settings Modal */}
       <Modal visible={showUnitSettingsModal} animationType="slide" presentationStyle="pageSheet">
@@ -748,134 +542,6 @@ export default function PropertyDetailScreen() {
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* Expenses Modal — contains both list and add-form views */}
-      <Modal visible={showExpensesModal} animationType="slide" presentationStyle="pageSheet">
-        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <SafeAreaView style={s.modal}>
-            <View style={s.modalHeader}>
-              <TouchableOpacity onPress={() => {
-                if (showAddExpenseForm) { setShowAddExpenseForm(false); }
-                else { setShowExpensesModal(false); }
-              }}>
-                <Text style={s.cancel}>{showAddExpenseForm ? 'Avbryt' : 'Lukk'}</Text>
-              </TouchableOpacity>
-              <Text style={s.modalTitle}>
-                {showAddExpenseForm ? 'Ny utgift' : `Utgifter – Enhet ${expenseUnit?.unit_number}`}
-              </Text>
-              {showAddExpenseForm ? (
-                <TouchableOpacity onPress={handleSaveExpense} disabled={savingExpense}>
-                  {savingExpense ? <ActivityIndicator color={BLUE} /> : <Text style={s.saveText}>Lagre</Text>}
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity onPress={() => {
-                  setExpenseForm({ amount: '', category: 'maintenance', description: '', date: new Date() });
-                  setShowDatePicker(false);
-                  setShowAddExpenseForm(true);
-                }}>
-                  <Text style={s.saveText}>+ Ny</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {showAddExpenseForm ? (
-              <ScrollView contentContainerStyle={s.modalBody}>
-                <View style={s.field}>
-                  <Text style={s.label}>Beløp (kr)</Text>
-                  <TextInput style={s.input} placeholder="2500" placeholderTextColor="#9CA3AF"
-                    keyboardType="numeric" autoFocus value={expenseForm.amount}
-                    onChangeText={v => setExpenseForm(p => ({ ...p, amount: v }))} />
-                </View>
-                <View style={s.field}>
-                  <Text style={s.label}>Kategori</Text>
-                  <View style={s.catGrid}>
-                    {EXPENSE_CATEGORIES.map(cat => (
-                      <TouchableOpacity key={cat.key}
-                        style={[s.catBtn, expenseForm.category === cat.key && { borderColor: cat.color, backgroundColor: cat.color + '12' }]}
-                        onPress={() => setExpenseForm(p => ({ ...p, category: cat.key }))}>
-                        <Ionicons name={cat.icon as any} size={16} color={expenseForm.category === cat.key ? cat.color : '#6B7280'} />
-                        <Text style={[s.catBtnText, expenseForm.category === cat.key && { color: cat.color, fontWeight: '600' }]}>{cat.label}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </View>
-                <View style={s.field}>
-                  <Text style={s.label}>Beskrivelse</Text>
-                  <TextInput style={s.input} placeholder="Eks: Byttet varmtvannsbereder" placeholderTextColor="#9CA3AF"
-                    value={expenseForm.description} onChangeText={v => setExpenseForm(p => ({ ...p, description: v }))} />
-                </View>
-                <View style={s.field}>
-                  <Text style={s.label}>Dato</Text>
-                  <TouchableOpacity style={s.dateBtn} onPress={() => setShowDatePicker(true)}>
-                    <Ionicons name="calendar-outline" size={18} color={BLUE} />
-                    <Text style={s.dateBtnText}>
-                      {expenseForm.date.toLocaleDateString('nb-NO', { day: 'numeric', month: 'long', year: 'numeric' })}
-                    </Text>
-                  </TouchableOpacity>
-                  {showDatePicker && (
-                    <DateTimePicker
-                      value={expenseForm.date}
-                      mode="date"
-                      display={Platform.OS === 'ios' ? 'inline' : 'default'}
-                      locale="nb-NO"
-                      maximumDate={new Date()}
-                      onChange={(_, selectedDate) => {
-                        if (Platform.OS === 'android') setShowDatePicker(false);
-                        if (selectedDate) setExpenseForm(p => ({ ...p, date: selectedDate }));
-                      }}
-                      style={{ marginTop: 8 }}
-                    />
-                  )}
-                  {showDatePicker && Platform.OS === 'ios' && (
-                    <TouchableOpacity onPress={() => setShowDatePicker(false)} style={s.dateCloseBtn}>
-                      <Text style={{ color: BLUE, fontWeight: '600' }}>Ferdig</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </ScrollView>
-            ) : loadingExpenses ? (
-              <ActivityIndicator style={{ marginTop: 40 }} color={BLUE} />
-            ) : (
-              <ScrollView contentContainerStyle={s.modalBody}>
-                {expenses.length > 0 && (
-                  <View style={s.expenseSummary}>
-                    <Text style={s.expenseSummaryLabel}>Totalt</Text>
-                    <Text style={s.expenseSummaryAmount}>
-                      {expenses.reduce((sum, e) => sum + Number(e.amount), 0).toLocaleString('nb-NO')} kr
-                    </Text>
-                  </View>
-                )}
-                {expenses.length === 0 ? (
-                  <View style={s.empty}>
-                    <Ionicons name="wallet-outline" size={40} color="#D1D5DB" />
-                    <Text style={s.emptyText}>Ingen utgifter registrert ennå.</Text>
-                  </View>
-                ) : (
-                  expenses.map(expense => {
-                    const cat = EXPENSE_CATEGORIES.find(c => c.key === expense.category)!;
-                    return (
-                      <View key={expense.id} style={s.expenseCard}>
-                        <View style={[s.expenseCatIcon, { backgroundColor: cat.color + '18' }]}>
-                          <Ionicons name={cat.icon as any} size={18} color={cat.color} />
-                        </View>
-                        <View style={s.expenseInfo}>
-                          <Text style={s.expenseDesc}>{expense.description}</Text>
-                          <Text style={s.expenseMeta}>{cat.label} · {expense.date}</Text>
-                        </View>
-                        <View style={s.expenseRight}>
-                          <Text style={s.expenseAmount}>{Number(expense.amount).toLocaleString('nb-NO')} kr</Text>
-                          <TouchableOpacity onPress={() => handleDeleteExpense(expense)}>
-                            <Ionicons name="trash-outline" size={16} color="#EF4444" />
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    );
-                  })
-                )}
-              </ScrollView>
-            )}
-          </SafeAreaView>
-        </KeyboardAvoidingView>
-      </Modal>
 
       {/* Property Settings Modal */}
       <Modal visible={showPropertySettingsModal} animationType="slide" presentationStyle="pageSheet">
@@ -967,7 +633,7 @@ export default function PropertyDetailScreen() {
               </TouchableOpacity>
             </View>
             <View style={s.modalBody}>
-              <Text style={s.inviteInfo}>Enhet: {selectedUnit?.unit_number}</Text>
+              <Text style={s.inviteInfo}>Enhet: {inviteUnit?.unit_number}</Text>
               <View style={s.field}>
                 <Text style={s.label}>Leietakers e-postadresse</Text>
                 <TextInput style={s.input} placeholder="leietaker@epost.no" placeholderTextColor="#9CA3AF"
@@ -1007,15 +673,20 @@ const s = StyleSheet.create({
   addBtn: { backgroundColor: BLUE, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8 },
   addBtnText: { color: '#fff', fontWeight: '600', fontSize: 14 },
   unitCard: { backgroundColor: '#fff', borderRadius: 16, padding: 16, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
-  unitRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 },
+  unitRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', borderRadius: 14, paddingHorizontal: 18, paddingVertical: 16, shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, elevation: 1 },
+  unitRowRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   unitInfo: { flex: 1, gap: 4 },
-  unitNumber: { fontSize: 16, fontWeight: '600', color: '#1A1A2E' },
-  unitRent: { fontSize: 14, color: BLUE, fontWeight: '500' },
+  unitNumber: { fontSize: 17, fontWeight: '700', color: '#1A1A2E' },
+  unitRent: { fontSize: 14, color: '#6B7280', fontWeight: '500' },
+  unitRentEmpty: { fontSize: 14, color: '#C4C9D4', fontStyle: 'italic' },
+  tenantDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#10B981' },
   unitDetail: { fontSize: 13, color: '#6B7280' },
   badge: { alignSelf: 'flex-start', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
   badgeText: { fontSize: 12, fontWeight: '600' },
   unitActions: { flexDirection: 'row', gap: 4 },
-  iconBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: '#F5F7FA', alignItems: 'center', justifyContent: 'center' },
+  iconBtn: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#F5F7FA', alignItems: 'center', justifyContent: 'center' },
+  iconBtnActive: { backgroundColor: '#EBF4FF' },
+  expandedActions: { flexDirection: 'row', gap: 8, alignItems: 'center' },
   empty: { alignItems: 'center', paddingVertical: 40, gap: 12 },
   emptyText: { color: '#6B7280', textAlign: 'center', fontSize: 14 },
   modal: { flex: 1, backgroundColor: '#fff' },
