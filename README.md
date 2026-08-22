@@ -1,6 +1,127 @@
 # BoligDialog
 
-Norsk mobil-app som samler all kommunikasjon mellom utleier og leietaker på ett sted — meldinger, feilmeldinger, dokumenter, rapporter og leiehistorikk.
+🚧 **Under utvikling** — ikke publisert ennå
+
+Norsk mobil-app som samler all kommunikasjon mellom utleier og leietaker på ett sted — meldinger, feilmeldinger, dokumenter, rapporter og leiehistorikk, med sanntidsoppdateringer.
+
+---
+
+## Skjermbilder
+
+<table>
+  <tr>
+    <td align="center" width="20%"><img src="screenshots/login.png" width="100%" alt="Innlogging"/><br/><sub>Innlogging</sub></td>
+    <td align="center" width="20%"><img src="screenshots/dashboard-utleier.png" width="100%" alt="Dashboard, utleier"/><br/><sub>Dashboard (utleier)</sub></td>
+    <td align="center" width="20%"><img src="screenshots/feilmeldinger.png" width="100%" alt="Feilmeldinger"/><br/><sub>Feilmeldinger</sub></td>
+    <td align="center" width="20%"><img src="screenshots/meldinger.png" width="100%" alt="Meldinger"/><br/><sub>Meldinger</sub></td>
+    <td align="center" width="20%"><img src="screenshots/hjem-leietaker.png" width="100%" alt="Hjem, leietaker"/><br/><sub>Hjem (leietaker)</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="screenshots/enhet-detalj.png" width="100%" alt="Enhetsdetaljer"/><br/><sub>Enhetsdetaljer</sub></td>
+    <td align="center"><img src="screenshots/enhet-tom.png" width="100%" alt="Enhet uten leietaker"/><br/><sub>Enhet uten leietaker</sub></td>
+  </tr>
+</table>
+
+> Skjermbildene viser design og datamodell med fiktivt eksempeldata (ingen ekte bruker- eller leietakerdata).
+
+---
+
+## Om prosjektet
+
+BoligDialog løser et konkret problem for private utleiere: kommunikasjon med leietakere er i dag spredt over SMS, e-post og løse Word-dokumenter. Appen samler det i to skreddersydde grensesnitt — ett for utleier, ett for leietaker — bygget rundt de samme dataene i sanntid.
+
+**Utleier** får oversikt over alle eiendommer og enheter, kan invitere leietakere med en kode, følge opp feilmeldinger med statusflyt, chatte per enhet, og gjennomføre inn-/utflyttingsrapporter med bilder og signering.
+
+**Leietaker** får ett sted å melde feil, se kontrakt og kvitteringer, chatte med utleier, og signere rapporter digitalt.
+
+---
+
+## Funksjoner
+
+### Utleier
+| Funksjon | Skjerm | Beskrivelse |
+|---|---|---|
+| Dashboard | `(landlord)/index` | Stat-kort (åpne feil, behandles, leietakere) + snarveier |
+| Eiendommer | `(landlord)/properties` | Liste over alle eiendommer |
+| Eiendomsdetaljer | `(landlord)/property/[id]` | Enheter, leietakere, dokumenter, utgifter, rapporter |
+| Leiehistorikk | `property/[id]` (modal) | Alle tidligere og aktive leietakere per enhet med periode og varighet |
+| Avslutt leieforhold | `property/[id]` (modal) | Setter ended_at på lease og fjerner leietaker fra enhet |
+| Feilmeldinger | `(landlord)/issues` | Alle feil på tvers av eiendommer med statusfilter |
+| Meldinger | `(landlord)/messages` | Chat per enhet med ulest-badge og sanntidsoppdatering |
+| Rapporter | `(landlord)/inspection` | Opprett inn-/utflyttingsrapporter med bilder per rom |
+| Dokumenter | `property/[id]` (modal) | Last opp kontrakter, husregler og kvitteringer per enhet |
+| Utgifter | `property/[id]` (modal) | Registrer og spor utgifter per enhet |
+| Fellesvarsler | `property/[id]` | Send kunngjøring til alle leietakere i en eiendom |
+| Profil | `(landlord)/profile` | Brukerinfo og utlogging |
+
+### Leietaker
+| Funksjon | Skjerm | Beskrivelse |
+|---|---|---|
+| Hjem | `(tenant)/index` | Varsler, leieforhold-info, snarvei til feilmelding og meldinger |
+| Feilmeldinger | `(tenant)/issues` | Rapporter feil med bilde og følg status |
+| Meldinger | `(tenant)/messages` | Chat direkte med utleier |
+| Dokumenter | `(tenant)/documents` | Se og last ned dokumenter delt av utleier |
+| Rapporter | `(tenant)/inspections` | Gjennomgå, kommenter, last opp bilder og signer rapporter |
+| Profil | `(tenant)/profile` | Brukerinfo og utlogging |
+
+---
+
+## Teknologi
+
+| Lag | Teknologi |
+|---|---|
+| Frontend | React Native + Expo SDK 56 |
+| Routing | Expo Router v3 (filbasert) |
+| Backend / DB | Supabase (PostgreSQL + Auth + Storage) |
+| Sanntid | Supabase Realtime (Postgres Changes) |
+| Tilstand | Zustand |
+| Skjemavalidering | React Hook Form + Zod |
+| Ikoner | @expo/vector-icons (Ionicons) |
+| Autentisering | Supabase Auth med SecureStore |
+| Testing | Jest + jest-expo |
+
+---
+
+## Prosjektstruktur
+
+```
+boligdialog/
+├── app/
+│   ├── _layout.tsx              # Root layout — auth-guard, splash, routing
+│   ├── (auth)/                  # Login, registrering, glemt passord
+│   ├── invite/[token].tsx       # Invitasjonsaksept — oppretter lease
+│   ├── (landlord)/
+│   │   ├── _layout.tsx          # Tab-navigator (5 tabs) + unread-badge
+│   │   ├── index.tsx            # Dashboard
+│   │   ├── properties.tsx       # Eiendomsliste
+│   │   ├── property/[id].tsx    # Enhet, leietaker, historikk, docs, utgifter
+│   │   ├── issues.tsx           # Feilmeldinger
+│   │   ├── messages.tsx         # Meldinger
+│   │   ├── inspection.tsx       # Inn-/utflyttingsrapporter
+│   │   └── profile.tsx          # Profil
+│   └── (tenant)/
+│       ├── _layout.tsx          # Tab-navigator (6 tabs)
+│       ├── index.tsx            # Hjem
+│       ├── issues.tsx           # Feilmeldinger
+│       ├── messages.tsx         # Meldinger
+│       ├── documents.tsx        # Dokumenter
+│       ├── inspections.tsx      # Rapporter
+│       └── profile.tsx          # Profil
+├── components/
+│   ├── Icon.tsx                 # Gjenbrukbare ikonkomponenter
+│   └── ProfileScreen.tsx        # Delt profilskjerm
+├── lib/
+│   ├── supabase.ts              # Supabase-klient med SecureStore-adapter
+│   └── types.ts                 # TypeScript-typer + Database-interface
+├── stores/
+│   └── authStore.ts             # Zustand: session, user, loading, signOut
+├── assets/                      # Bilder og ikoner
+├── screenshots/                 # Skjermbilder brukt i denne READMEen
+├── supabase/
+│   └── migrations.sql           # Database-migrasjoner
+└── landing/
+    └── index.html               # Landingsside
+```
 
 ---
 
@@ -96,89 +217,22 @@ eas submit --platform ios --profile production
 
 ---
 
-## Funksjoner
+## Veikart
 
-### Utleier
-| Funksjon | Skjerm | Beskrivelse |
-|---|---|---|
-| Dashboard | `(landlord)/index` | Stat-kort (åpne feil, behandles, leietakere) + snarveier |
-| Eiendommer | `(landlord)/properties` | Liste over alle eiendommer |
-| Eiendomsdetaljer | `(landlord)/property/[id]` | Enheter, leietakere, dokumenter, utgifter, rapporter |
-| Leiehistorikk | `property/[id]` (modal) | Alle tidligere og aktive leietakere per enhet med periode og varighet |
-| Avslutt leieforhold | `property/[id]` (modal) | Setter ended_at på lease og fjerner leietaker fra enhet |
-| Feilmeldinger | `(landlord)/issues` | Alle feil på tvers av eiendommer med statusfilter |
-| Meldinger | `(landlord)/messages` | Chat per enhet med ulest-badge og sanntidsoppdatering |
-| Rapporter | `(landlord)/inspection` | Opprett inn-/utflyttingsrapporter med bilder per rom |
-| Dokumenter | `property/[id]` (modal) | Last opp kontrakter, husregler og kvitteringer per enhet |
-| Utgifter | `property/[id]` (modal) | Registrer og spor utgifter per enhet |
-| Fellesvarsler | `property/[id]` | Send kunngjøring til alle leietakere i en eiendom |
-| Profil | `(landlord)/profile` | Brukerinfo og utlogging |
-
-### Leietaker
-| Funksjon | Skjerm | Beskrivelse |
-|---|---|---|
-| Hjem | `(tenant)/index` | Varsler, leieforhold-info, snarvei til feilmelding og meldinger |
-| Feilmeldinger | `(tenant)/issues` | Rapporter feil med bilde og følg status |
-| Meldinger | `(tenant)/messages` | Chat direkte med utleier |
-| Dokumenter | `(tenant)/documents` | Se og last ned dokumenter delt av utleier |
-| Rapporter | `(tenant)/inspections` | Gjennomgå, kommenter, last opp bilder og signer rapporter |
-| Profil | `(tenant)/profile` | Brukerinfo og utlogging |
+- [ ] Push-varsler for nye meldinger og feilmeldinger
+- [ ] Android-testing og -lansering
+- [ ] Betalingsintegrasjon for husleie
+- [ ] Eksport av rapporter til PDF
 
 ---
 
-## Teknologi
+## Om utvikleren
 
-| Lag | Teknologi |
-|---|---|
-| Frontend | React Native + Expo SDK 56 |
-| Routing | Expo Router v3 (filbasert) |
-| Backend / DB | Supabase (PostgreSQL + Auth + Storage) |
-| Sanntid | Supabase Realtime (Postgres Changes) |
-| Tilstand | Zustand |
-| Ikoner | @expo/vector-icons (Ionicons) |
-| Autentisering | Supabase Auth med SecureStore |
+Laget av **Iselin Trondsen**, frontend-utvikler.
 
----
-
-## Prosjektstruktur
-
-```
-boligdialog/
-├── app/
-│   ├── _layout.tsx              # Root layout — auth-guard, splash, routing
-│   ├── (auth)/                  # Login, registrering, glemt passord
-│   ├── invite/[token].tsx       # Invitasjonsaksept — oppretter lease
-│   ├── (landlord)/
-│   │   ├── _layout.tsx          # Tab-navigator (5 tabs) + unread-badge
-│   │   ├── index.tsx            # Dashboard
-│   │   ├── properties.tsx       # Eiendomsliste
-│   │   ├── property/[id].tsx    # Enhet, leietaker, historikk, docs, utgifter
-│   │   ├── issues.tsx           # Feilmeldinger
-│   │   ├── messages.tsx         # Meldinger
-│   │   ├── inspection.tsx       # Inn-/utflyttingsrapporter
-│   │   └── profile.tsx          # Profil
-│   └── (tenant)/
-│       ├── _layout.tsx          # Tab-navigator (6 tabs)
-│       ├── index.tsx            # Hjem
-│       ├── issues.tsx           # Feilmeldinger
-│       ├── messages.tsx         # Meldinger
-│       ├── documents.tsx        # Dokumenter
-│       ├── inspections.tsx      # Rapporter
-│       └── profile.tsx          # Profil
-├── components/
-│   ├── Icon.tsx                 # Gjenbrukbare ikonkomponenter
-│   └── ProfileScreen.tsx        # Delt profilskjerm
-├── lib/
-│   ├── supabase.ts              # Supabase-klient med SecureStore-adapter
-│   └── types.ts                 # TypeScript-typer + Database-interface
-├── stores/
-│   └── authStore.ts             # Zustand: session, user, loading, signOut
-├── assets/                      # Bilder og ikoner
-├── supabase/
-│   └── migrations.sql           # Database-migrasjoner
-└── landing/
-    └── index.html               # Landingsside
-```
+[![GitHub](https://img.shields.io/badge/GitHub-iselintrondsen-181717?style=flat&logo=github)](https://github.com/iselintrondsen)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-iselin--trondsen-0A66C2?style=flat&logo=linkedin)](https://linkedin.com/in/iselin-trondsen)
+[![E-post](https://img.shields.io/badge/E--post-iselintrondsen%40hotmail.com-EA4335?style=flat&logo=gmail&logoColor=white)](mailto:iselintrondsen@hotmail.com)
 
 ---
 
