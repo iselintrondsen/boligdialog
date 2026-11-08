@@ -38,7 +38,7 @@ class MockXHR {
 }
 
 let lastXhr: MockXHR;
-(global as any).XMLHttpRequest = jest.fn(() => {
+(globalThis as any).XMLHttpRequest = jest.fn(() => {
   lastXhr = new MockXHR();
   return lastXhr;
 });

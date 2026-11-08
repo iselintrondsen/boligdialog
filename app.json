@@ -16,7 +16,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "no.boligdialog.app",
-      "buildNumber": "3",
+      "buildNumber": "16",
       "infoPlist": {
         "NSCameraUsageDescription": "BoligDialog bruker kameraet til å ta bilder av boligens tilstand i inn- og utflyttingsrapporter.",
         "NSPhotoLibraryUsageDescription": "BoligDialog trenger tilgang til bilder for å legge ved dokumentasjon i rapporter og feilmeldinger.",
