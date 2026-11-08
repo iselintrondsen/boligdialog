@@ -47,7 +47,9 @@ Du har rett til å:
 • Kreve sletting av dine opplysninger ("retten til å bli glemt")
 • Trekke tilbake samtykke når som helst
 
-For å utøve dine rettigheter, kontakt oss på:
+Du kan når som helst slette kontoen din i appen under Profil → Slett konto. Da slettes kontoen og dataene som er knyttet til den permanent.
+
+For å utøve dine øvrige rettigheter, kontakt oss på:
 support@boligdialog.no
 
 8. KONTAKT
@@ -69,6 +71,7 @@ export function ProfileScreen({ role, stats }: Props) {
   const [savingName, setSavingName] = useState(false);
   const [sendingReset, setSendingReset] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     SecureStore.getItemAsync('notifications_enabled').then(val => {
@@ -114,6 +117,36 @@ export function ProfileScreen({ role, stats }: Props) {
     { text: 'Avbryt', style: 'cancel' },
     { text: 'Logg ut', style: 'destructive', onPress: signOut },
   ]);
+
+  const deleteAccount = async () => {
+    setDeleting(true);
+    const { error } = await supabase.functions.invoke('delete-account', { method: 'POST' });
+    if (error) {
+      setDeleting(false);
+      Alert.alert('Noe gikk galt', 'Kontoen kunne ikke slettes. Prøv igjen, eller kontakt support@boligdialog.no.');
+      return;
+    }
+    // Brukeren finnes ikke lenger på serveren – rydd kun lokal sesjon
+    await supabase.auth.signOut({ scope: 'local' });
+    useAuthStore.setState({ session: null, user: null });
+    Alert.alert('Kontoen er slettet', 'Kontoen din og dataene som var knyttet til den er nå slettet.');
+  };
+
+  const handleDeleteAccount = () => {
+    const consequences = role === 'landlord'
+      ? 'Alle eiendommer, enheter, dokumenter, rapporter, meldinger og feilmeldinger du har registrert slettes permanent. Leietakerne dine mister tilgangen til dem.'
+      : 'Meldingene, feilmeldingene og dokumentene du har lagt inn slettes permanent, og du kobles fra boligen din.';
+    Alert.alert('Slett konto', `${consequences}\n\nDette kan ikke angres.`, [
+      { text: 'Avbryt', style: 'cancel' },
+      {
+        text: 'Fortsett', style: 'destructive', onPress: () =>
+          Alert.alert('Er du helt sikker?', 'Kontoen din slettes for godt.', [
+            { text: 'Avbryt', style: 'cancel' },
+            { text: 'Slett kontoen min', style: 'destructive', onPress: deleteAccount },
+          ]),
+      },
+    ]);
+  };
 
   const roleLabel = role === 'landlord' ? 'Utleier' : 'Leietaker';
   const initial = user?.full_name?.charAt(0).toUpperCase() ?? '?';
@@ -214,6 +247,12 @@ export function ProfileScreen({ role, stats }: Props) {
           <Ionicons name="log-out-outline" size={18} color="#EF4444" />
           <Text style={s.signOutText}>Logg ut</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity style={s.deleteBtn} onPress={handleDeleteAccount} disabled={deleting}>
+          {deleting
+            ? <ActivityIndicator size="small" color="#9CA3AF" />
+            : <Text style={s.deleteText}>Slett konto</Text>}
+        </TouchableOpacity>
       </ScrollView>
 
       {/* Rediger navn modal */}
@@ -280,6 +319,8 @@ const s = StyleSheet.create({
   divider: { height: 1, backgroundColor: '#F5F7FA', marginLeft: 62 },
   signOutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA', borderRadius: 16, padding: 16, marginTop: 4 },
   signOutText: { color: '#EF4444', fontWeight: '600', fontSize: 15 },
+  deleteBtn: { alignItems: 'center', padding: 14, marginTop: 8 },
+  deleteText: { color: '#9CA3AF', fontSize: 14, textDecorationLine: 'underline' },
   modal: { flex: 1, backgroundColor: '#fff' },
   modalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' },
   modalTitle: { fontSize: 17, fontWeight: '600', color: '#1A1A2E' },
